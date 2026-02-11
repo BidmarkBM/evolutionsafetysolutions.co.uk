@@ -1,0 +1,33 @@
+/* WP.com content --------------------------------------- */
+
+/* Blog subscription */
+#content .widget_blog_subscription h2 {
+	margin: 0 0 0.5em;
+}
+
+/* WP.com share and related posts */
+.single div.sharedaddy {
+	padding-top: 1em;
+}
+
+.single div.sharedaddy h3,
+.single div#jp-relatedposts h3,
+.single div#jp-relatedposts h3 em {
+	color: #999;
+	font-family: 'Roboto Slab', sans-serif;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.single div.sharedaddy h3.sd-title::before,
+.single div#jp-relatedposts h3.jp-relatedposts-headline em::before {
+	display: none;
+}
+
+.single div.sharedaddy,
+#jp-post-flair,
+.single .format-aside .post-content #jp-post-flair,
+.single .format-status .post-content #jp-post-flair {
+	font-family: 'Roboto', sans-serif;
+	font-size: 17px;
+}

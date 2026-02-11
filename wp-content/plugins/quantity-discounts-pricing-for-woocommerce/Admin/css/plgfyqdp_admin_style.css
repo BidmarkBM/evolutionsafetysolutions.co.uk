@@ -1,0 +1,48 @@
+
+.removecurrent_row{
+    background-color: red!important;
+    top: 1px !important;
+    right: 1px !important;
+  }
+ 
+.modal-content{
+  filter: blur(0px) !important;
+}
+ 
+.dataTables_scrollHeadInner{  width:100% !important; }
+.dataTables_scrollHeadInner table{  width:100% !important; }
+  .dataTables_scrollHead{
+    background-color: #e2e2e2 !important;
+    
+  }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__rendered li{
+      font-size: 12px;
+    }
+.woocommerce-save-button{
+  display: none !important;
+}
+
+
+
+.woocommerce-save-button {
+  display: none !important;
+}
+
+
+
+
+ .plgfyqdp_main{
+    background-color: #FFF !important;
+  }.plgfyqdp_main ~ .plgfyqdp_main {
+  border: 1px solid white;
+  padding: 18px;
+  background-color: white;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  border-radius: 5px;
+  margin-top: -20px;
+  background: #f7f7ef;  
+}
+
+
+

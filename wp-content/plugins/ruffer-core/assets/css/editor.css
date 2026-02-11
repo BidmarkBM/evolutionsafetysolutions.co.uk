@@ -1,0 +1,13 @@
+.elementor-panel .elementor-element .icon i.th-icon::after{
+	display: none;
+}
+
+.elementor-panel .elementor-element .icon i.th-icon::before{
+    width: 30px;
+    height: 30px;
+    content: "";
+    display: inline-block;
+    border-radius: 5px;
+    margin-bottom: -6px;
+	background: url("../img/icon/favicon.svg") no-repeat center center/cover;
+}

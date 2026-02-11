@@ -1,0 +1,4 @@
+Item Name,SKU,Description,Rate,Purchase Rate,Inventory Method,Account,Purchase Description,Item Type,Usage Unit,Stock On Hand,Reorder Level,Is Inclusive Tax,Tax Name,Tax Percentage
+"Advanced WordPress Workshop","WP-ADV-01","Full day deep dive into WP internals",150.00,0.00,"FIFO","Sales","","service","units",25,5,false,"VAT",20
+"Introduction to SEO","SEO-101","Beginner course for search optimization",85.00,0.00,"FIFO","Sales","","service","units",12,2,false,"VAT",20
+"React Mastery Course","JS-REA-99","Building high-performance apps with React",299.00,0.00,"FIFO","Sales","","service","units",8,0,false,"VAT",20

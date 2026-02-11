@@ -1,0 +1,142 @@
+/* Header 8 ---------------------------------- */
+body.home-sidemenu {
+    margin-right: 315px;
+    margin-left: 0;
+    @include md {
+        margin-right: 124px;
+    }
+    @include xs {
+        margin-right: 92px;
+    }
+    @include vxs {
+        margin-right: 0px;
+    }
+}
+.header-layout8 {
+    .th-menu-wrapper2 {
+        text-align: right;
+        .th-menu-area {
+            right: 0;
+            left: auto;
+            border-left: 3px solid var(--theme-color);
+            border-right: 0;
+        }
+    }
+}
+@include md {
+    .header-layout8 .th-menu-wrapper .th-menu-area {
+        padding: 30px;
+    }
+}
+@include xs {
+    .header-layout8 .th-menu-wrapper .th-menu-area {
+        padding: 20px;
+    }
+}
+@include vxs {
+    .header-layout8 .th-menu-wrapper .th-menu-area {
+        padding: 20px;
+    }
+}
+/************hero-8***********/
+.hero-8 {
+    .hero-slider-indicator {
+        right: auto;
+        left: 100px;
+        @media (max-width: 1600px) {
+            left: 80px;
+        }
+        @include ml {
+            left: 50px;
+        }
+    }
+    
+    .hero-video-wrap {
+        left: 0;
+        right: auto;
+        padding: 0 0px 0 50px;
+        
+        .hero-contact-wrap {
+            &:not(:last-child) {
+                border-left: 1px solid $body-color;
+                border-right: 0;
+                padding-right: 0;
+                padding-left: 30px;
+            }
+        }
+    }
+}
+.about-feature-wrap4 .about-feature3 ~ .about-feature3 {
+    border-right: 0;
+    padding-right: 0;
+    margin-right: 0;
+}
+
+/******service-box 9*******/
+.service-list {
+    &-wrap {
+        $service-list-border: 3;
+        --space-x: 35px;
+        --space-y: 35px;
+        &:not(:nth-last-child(-n + #{$service-list-border})) {
+            border-bottom: 1px solid $border-color;
+            padding-bottom: var(--space-y);
+        }
+        &:not(:nth-child(-n + #{$service-list-border})) {
+            padding-top: var(--space-y);
+        }
+        &:not(:nth-child(#{$service-list-border}n)) {
+            border-left: 1px solid $border-color;
+            border-right: 0;
+            padding-left: var(--space-x);
+            padding-right: 0;
+        }
+        &:not(:nth-child(#{$service-list-border}n + 1)) {
+            padding-right: var(--space-x);
+            padding-left: 0;
+        }
+    }
+    &_btn {
+        .icon-btn {
+            margin-left: 10px;
+            margin-right: 0;
+        }
+    }
+}
+
+@include lg {
+    .service-list {
+        &-wrap {
+            // &:not(:nth-child(#{$service-list-border}n)) {
+            //     border-left: unset;
+            // }
+            // &:not(:nth-child(#{$service-list-border}n + 1)) {
+            //     padding-right: unset;
+            // }
+            &:nth-child(odd) {
+                padding-left: var(--space-x);
+                padding-right: 0;
+            }
+            &:nth-child(even) {
+                padding-right: var(--space-x);
+                padding-left: 0;
+                border-right: 1px solid $border-color;
+                border-left: 0;
+            }
+        }
+    }
+}
+@include sm {
+    .service-list {
+        &-wrap {
+            &:nth-child(odd) {
+                border-right: 1px solid $border-color;
+                border-left: 0;
+            }
+            &:nth-child(even) {
+                border-left: 1px solid $border-color;
+                border-right: unset;
+            }
+        }
+    }
+}
