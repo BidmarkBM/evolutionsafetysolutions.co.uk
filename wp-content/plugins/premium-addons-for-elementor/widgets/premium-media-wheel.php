@@ -163,7 +163,26 @@ class Premium_Media_Wheel extends Widget_Base {
 	}
 
 	protected function is_dynamic_content(): bool {
-		return false;
+
+		$is_edit = Plugin::instance()->editor->is_edit_mode();
+
+		if ( $is_edit ) {
+			return false;
+		}
+
+		$items              = $this->get_settings( 'media_wheel_repeater' );
+		$is_dynamic_content = false;
+
+		if ( ! empty( $items ) ) {
+			foreach ( $items as $item ) {
+				if ( 'template' === $item['pa_media_type'] || 'id' === $item['pa_media_type'] ) {
+					$is_dynamic_content = true;
+					break;
+				}
+			}
+		}
+
+		return $is_dynamic_content;
 	}
 
 	/**
@@ -202,6 +221,7 @@ class Premium_Media_Wheel extends Widget_Base {
 		$this->add_items_controls();
 		$this->add_advanced_controls();
 		$this->add_light_box_controls();
+		$this->register_docs_controls();
 
 		Helper_Functions::register_papro_promotion_controls( $this, 'adv-carousel' );
 
@@ -252,6 +272,34 @@ class Premium_Media_Wheel extends Widget_Base {
 					'image'    => __( 'Image', 'premium-addons-for-elementor' ),
 					'video'    => __( 'Video', 'premium-addons-for-elementor' ),
 					'template' => __( 'Elementor Template', 'premium-addons-for-elementor' ),
+					'id'       => __( 'Container ID', 'premium-addons-for-elementor' ),
+				),
+			)
+		);
+
+		$repeater->add_control(
+			'container_id',
+			array(
+				'label'       => __( 'Container ID', 'premium-addons-for-elementor' ),
+				'type'        => Controls_Manager::TEXT,
+				'description' => __( 'Enter the CSS ID of the container you want to use as a media item.', 'premium-addons-for-elementor' ),
+				'condition'   => array(
+					'pa_media_type' => 'id',
+				),
+				'ai'          => array(
+					'active' => false,
+				),
+			)
+		);
+
+		$repeater->add_control(
+			'container_id_notice',
+			array(
+				'raw'             => __( 'Use this to create slides from containers on this page. For example container-1. Please make sure the container is added before the carousel on the page.', 'premium-addons-for-elementor' ),
+				'type'            => Controls_Manager::RAW_HTML,
+				'content_classes' => 'elementor-panel-alert elementor-panel-alert-info',
+				'condition'       => array(
+					'pa_media_type' => 'id',
 				),
 			)
 		);
@@ -266,7 +314,7 @@ class Premium_Media_Wheel extends Widget_Base {
 					'url' => Utils::get_placeholder_image_src(),
 				),
 				'condition' => array(
-					'pa_media_type!' => 'template',
+					'pa_media_type' => array( 'video', 'image' ),
 				),
 			)
 		);
@@ -286,7 +334,7 @@ class Premium_Media_Wheel extends Widget_Base {
 					'{{WRAPPER}} {{CURRENT_ITEM}} img.premium-adv-carousel__item-img, {{WRAPPER}} {{CURRENT_ITEM}} .premium-adv-carousel__item-img img, {{WRAPPER}} {{CURRENT_ITEM}} .vid-overlay' => 'object-fit: {{VALUE}}',
 				),
 				'condition' => array(
-					'pa_media_type!' => 'template',
+					'pa_media_type' => array( 'video', 'image' ),
 				),
 			)
 		);
@@ -314,7 +362,7 @@ class Premium_Media_Wheel extends Widget_Base {
 					'{{WRAPPER}} {{CURRENT_ITEM}} img.premium-adv-carousel__item-img, {{WRAPPER}} {{CURRENT_ITEM}} .premium-adv-carousel__item-img img, {{WRAPPER}} {{CURRENT_ITEM}} .vid-overlay' => 'object-position: {{VALUE}}',
 				),
 				'condition' => array(
-					'pa_media_type!' => 'template',
+					'pa_media_type' => array( 'video', 'image' ),
 				),
 			)
 		);
@@ -1315,6 +1363,31 @@ class Premium_Media_Wheel extends Widget_Base {
 		$this->end_controls_section();
 	}
 
+	private function register_docs_controls() {
+
+		$this->start_controls_section(
+			'section_pa_docs',
+			array(
+				'label' => __( 'Help & Docs', 'premium-addons-for-elementor' ),
+			)
+		);
+
+		$doc1_url = Helper_Functions::get_campaign_link( 'https://premiumaddons.com/docs/elementor-advanced-media-carousel-widget/', 'adv-carousel', 'wp-editor', 'get-support' );
+
+		$this->add_control(
+			'doc_1',
+			array(
+				'type'            => Controls_Manager::RAW_HTML,
+				'raw'             => sprintf( '<a href="%s" target="_blank">%s</a>', $doc1_url, __( 'Getting started »', 'premium-addons-for-elementor' ) ),
+				'content_classes' => 'editor-pa-doc',
+			)
+		);
+
+		Helper_Functions::register_element_feedback_controls( $this );
+
+		$this->end_controls_section();
+	}
+
 	private function add_img_style_controls() {
 
 		$this->start_controls_section(
@@ -2169,8 +2242,8 @@ class Premium_Media_Wheel extends Widget_Base {
 		$this->start_controls_section(
 			'lighbox_icon_style',
 			array(
-				'label' => __( 'Lightbox Icon', 'premium-addons-for-elementor' ),
-				'tab'   => Controls_Manager::TAB_STYLE,
+				'label'     => __( 'Lightbox Icon', 'premium-addons-for-elementor' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
 				'condition' => array(
 					'media_lightbox_type' => 'yes',
 				),
@@ -2660,14 +2733,20 @@ class Premium_Media_Wheel extends Widget_Base {
 							$this->add_render_attribute(
 								'wheel_img' . $index,
 								array(
-									'src'   => esc_url( $image_url ),
+									'src'   => esc_url( $image_url ?: $item['media_wheel_img']['url'] ),
 									'alt'   => esc_attr( Control_Media::get_image_alt( $item['media_wheel_img'] ) ),
-									'class' => 'premium-adv-carousel__item-img ' . $hover_effect,
+									'class' => 'premium-adv-carousel__item-img ' . esc_attr( $hover_effect ),
 								)
 							);
 
 							?>
 								<img <?php echo wp_kses_post( $this->get_render_attribute_string( 'wheel_img' . $index ) ); ?>>
+							<?php
+						} elseif ( 'id' === $media_type ) {
+							?>
+								<div class="premium-adv-carousel__item--container"
+									data-template-src="<?php echo esc_attr( $item['container_id'] ); ?>">
+								</div>
 							<?php
 						} elseif ( 'video' === $media_type ) {
 								$video_data         = $this->render_carousel_video( $item, $index, $hover_effect );

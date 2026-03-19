@@ -2,6 +2,7 @@
 
 namespace SweetCode\Pixel_Manager\Pixels\Google;
 
+use SweetCode\Pixel_Manager\Geolocation;
 use SweetCode\Pixel_Manager\Helpers;
 use SweetCode\Pixel_Manager\Logger;
 use SweetCode\Pixel_Manager\Options;
@@ -118,9 +119,6 @@ class GTG_Proxy {
 		// This handles the case where GTG was enabled in an older version before the proxy was available
 		self::maybe_flush_rewrite_rules_on_upgrade();
 		
-		// Write initial config cache for isolated proxy
-		add_action('init', [ __CLASS__, 'update_proxy_config_cache' ], 20);
-		
 		// Ensure isolated proxy file exists and is up to date
 		add_action('init', [ __CLASS__, 'ensure_isolated_proxy_file' ], 21);
 	}
@@ -201,12 +199,13 @@ class GTG_Proxy {
 		$old_path = isset( $old_value['google']['tag_gateway']['measurement_path'] ) ? $old_value['google']['tag_gateway']['measurement_path'] : '';
 		$new_path = isset( $new_value['google']['tag_gateway']['measurement_path'] ) ? $new_value['google']['tag_gateway']['measurement_path'] : '';
 
-		// If the measurement path has changed, flush rewrite rules and update config
-		if ($old_path !== $new_path) {
+		// Always update configuration cache for isolated proxy when options are saved
+		// This ensures logging settings and other config changes are reflected
+		self::update_proxy_config_cache();
+
+		// If the measurement path has changed, flush rewrite rules
+		if ( $old_path !== $new_path ) {
 			flush_rewrite_rules();
-			
-			// Update configuration cache for isolated proxy
-			self::update_proxy_config_cache();
 
 			// Clear and refresh GTG handler cache since path changed
 			GTG_Config::refresh_handler();
@@ -1173,34 +1172,13 @@ class GTG_Proxy {
 	/**
 	 * Get the real client IP address
 	 *
+	 * Uses the centralized Geolocation class for consistent IP detection
+	 * across all CDNs and proxies.
+	 *
 	 * @return string The client IP address.
 	 */
 	private static function get_client_ip() {
-
-		$_server = Helpers::get_input_vars(INPUT_SERVER);
-
-		// Check for Cloudflare
-		if (!empty($_server['HTTP_CF_CONNECTING_IP'])) {
-			return sanitize_text_field($_server['HTTP_CF_CONNECTING_IP']);
-		}
-
-		// Check for standard forwarded header
-		if (!empty($_server['HTTP_X_FORWARDED_FOR'])) {
-			$ips = explode(',', $_server['HTTP_X_FORWARDED_FOR']);
-			return sanitize_text_field(trim($ips[0]));
-		}
-
-		// Check for real IP header
-		if (!empty($_server['HTTP_X_REAL_IP'])) {
-			return sanitize_text_field($_server['HTTP_X_REAL_IP']);
-		}
-
-		// Fall back to remote addr
-		if (!empty($_server['REMOTE_ADDR'])) {
-			return sanitize_text_field($_server['REMOTE_ADDR']);
-		}
-
-		return '';
+		return Geolocation::get_ip_address();
 	}
 
 	/**
@@ -1431,11 +1409,184 @@ class GTG_Proxy {
 	}
 	
 	/**
+	 * Get the GTG config directory path in wp-content/uploads
+	 *
+	 * @return string|false Config directory path or false on failure.
+	 *
+	 * @since 1.56.0
+	 */
+	public static function get_config_directory() {
+		$upload_dir = wp_upload_dir();
+		if ( ! isset( $upload_dir['basedir'] ) ) {
+			return false;
+		}
+		return $upload_dir['basedir'] . '/pmw-gtg';
+	}
+
+	/**
+	 * Get the GTG config file path for the current site
+	 *
+	 * Uses blog_id to support multisite installations.
+	 *
+	 * @return string|false Config file path or false on failure.
+	 *
+	 * @since 1.56.0
+	 */
+	public static function get_config_file_path() {
+		$config_dir = self::get_config_directory();
+		if ( ! $config_dir ) {
+			return false;
+		}
+		$blog_id = get_current_blog_id();
+		return $config_dir . '/config-' . $blog_id . '.json';
+	}
+
+	/**
+	 * Get the site map file path
+	 *
+	 * The site map maps site identifiers (hostname + path) to config filenames.
+	 *
+	 * @return string|false Site map file path or false on failure.
+	 *
+	 * @since 1.56.0
+	 */
+	public static function get_site_map_path() {
+		$config_dir = self::get_config_directory();
+		if ( ! $config_dir ) {
+			return false;
+		}
+		return $config_dir . '/site-map.json';
+	}
+
+	/**
+	 * Get the site identifier for the current site
+	 *
+	 * For subdomain multisite: hostname (e.g., "site1.example.com")
+	 * For subdirectory multisite: hostname/path (e.g., "example.com/site2")
+	 * For single site: hostname (e.g., "example.com")
+	 *
+	 * @return string Site identifier.
+	 *
+	 * @since 1.56.0
+	 */
+	public static function get_site_identifier() {
+		$site_url = get_site_url();
+		$parsed   = wp_parse_url( $site_url );
+		$host     = isset( $parsed['host'] ) ? $parsed['host'] : '';
+		$path     = isset( $parsed['path'] ) ? trim( $parsed['path'], '/' ) : '';
+
+		// Combine host and path for subdirectory multisite
+		if ( ! empty( $path ) ) {
+			return $host . '/' . $path;
+		}
+
+		return $host;
+	}
+
+	/**
+	 * Ensure the config directory exists with security files
+	 *
+	 * Creates the directory if needed and adds .htaccess and index.php
+	 * to prevent direct access to config files.
+	 *
+	 * @return bool True if directory exists and is writable, false otherwise.
+	 *
+	 * @since 1.56.0
+	 */
+	private static function ensure_config_directory() {
+		$config_dir = self::get_config_directory();
+		if ( ! $config_dir ) {
+			return false;
+		}
+
+		// Create directory if it doesn't exist
+		if ( ! file_exists( $config_dir ) ) {
+			if ( ! wp_mkdir_p( $config_dir ) ) {
+				return false;
+			}
+
+			// Create .htaccess to deny direct access
+			$htaccess_file = $config_dir . '/.htaccess';
+			if ( ! file_exists( $htaccess_file ) ) {
+				file_put_contents( $htaccess_file, "deny from all\n", LOCK_EX );
+			}
+
+			// Create index.php to prevent directory listing
+			$index_file = $config_dir . '/index.php';
+			if ( ! file_exists( $index_file ) ) {
+				file_put_contents( $index_file, "<?php\n// Silence is golden.\n", LOCK_EX );
+			}
+		}
+
+		return is_dir( $config_dir ) && is_writable( $config_dir );
+	}
+
+	/**
+	 * Update the site map with the current site's entry
+	 *
+	 * Uses file locking and atomic writes to prevent race conditions.
+	 *
+	 * @param string $site_identifier Site identifier (hostname or hostname/path).
+	 * @param string $config_filename Config filename (e.g., "config-1.json").
+	 * @param bool   $remove          Whether to remove the entry instead of adding it.
+	 * @return bool True on success, false on failure.
+	 *
+	 * @since 1.56.0
+	 */
+	private static function update_site_map( $site_identifier, $config_filename, $remove = false ) {
+		$site_map_file = self::get_site_map_path();
+		if ( ! $site_map_file ) {
+			return false;
+		}
+
+		// Read existing site map
+		$site_map = [];
+		if ( file_exists( $site_map_file ) ) {
+			$content = file_get_contents( $site_map_file );
+			if ( false !== $content ) {
+				$decoded = json_decode( $content, true );
+				if ( is_array( $decoded ) ) {
+					$site_map = $decoded;
+				}
+			}
+		}
+
+		// Update or remove entry
+		if ( $remove ) {
+			unset( $site_map[ $site_identifier ] );
+		} else {
+			$site_map[ $site_identifier ] = $config_filename;
+		}
+
+		// Write site map atomically
+		$site_map_json = wp_json_encode( $site_map, JSON_PRETTY_PRINT );
+		$temp_file     = $site_map_file . '.tmp.' . uniqid();
+		$result        = false;
+
+		if ( false !== file_put_contents( $temp_file, $site_map_json, LOCK_EX ) ) {
+			clearstatcache( true, $temp_file );
+			if ( file_exists( $temp_file ) ) {
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Silencing rename errors to prevent warnings in edge cases
+				$result = @rename( $temp_file, $site_map_file );
+			}
+			clearstatcache( true, $temp_file );
+			if ( ! $result && file_exists( $temp_file ) ) {
+				@unlink( $temp_file );
+			}
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Update proxy configuration cache for isolated proxy
 	 *
-	 * Writes configuration to cache file that the isolated proxy can read
-	 * without loading WordPress. Includes logging configuration so the
+	 * Writes configuration to wp-content/uploads/pmw-gtg/ that the isolated proxy
+	 * can read without loading WordPress. Includes logging configuration so the
 	 * isolated proxy can log to the same location as WordPress.
+	 *
+	 * Supports multisite by using blog_id in config filenames and maintaining
+	 * a site map that maps site identifiers to config files.
 	 *
 	 * @return bool True on success, false on failure.
 	 */
@@ -1447,16 +1598,29 @@ class GTG_Proxy {
 			$log_directory = $upload_dir['basedir'] . '/pmw-logs';
 		}
 
-		// Config file is stored next to the proxy file in the google folder
-		$config_file = __DIR__ . '/pmw-gtg-config.json';
+		// Get config file path (in uploads directory)
+		$config_file     = self::get_config_file_path();
+		$site_identifier = self::get_site_identifier();
+		$blog_id         = get_current_blog_id();
+		$config_filename = 'config-' . $blog_id . '.json';
+
+		if ( ! $config_file ) {
+			return false;
+		}
 
 		// Only update if GTG is active
 		if ( ! self::is_active() ) {
-			// Remove config file if GTG is disabled
+			// Remove config file and site map entry if GTG is disabled
 			if ( file_exists( $config_file ) ) {
 				@unlink( $config_file );
 			}
+			self::update_site_map( $site_identifier, $config_filename, true );
 			return true;
+		}
+
+		// Ensure config directory exists with security files
+		if ( ! self::ensure_config_directory() ) {
+			return false;
 		}
 
 		// Ensure log directory exists (for logging, not for config)
@@ -1477,23 +1641,71 @@ class GTG_Proxy {
 
 		// Get the isolated proxy URL for self-referencing in rewrites
 		$proxy_url = plugins_url( 'pmw-gtg-proxy.php', __FILE__ );
+		$site_url  = get_site_url();
+
+		// Ensure proxy URL uses the same protocol as the site URL
+		// plugins_url() may return HTTP even when site uses HTTPS (e.g., when called from CLI)
+		if ( 0 === strpos( $site_url, 'https://' ) && 0 === strpos( $proxy_url, 'http://' ) ) {
+			$proxy_url = 'https://' . substr( $proxy_url, 7 );
+		}
 
 		$config = [
 			'enabled'          => $isolated_proxy_enabled,
 			'measurement_path' => Options::get_google_tag_gateway_measurement_path(),
 			'proxy_url'        => $proxy_url,
-			'site_url'         => get_site_url(),
+			'site_url'         => $site_url,
 			'logging_enabled'  => $logging_enabled,
 			'log_level'        => $log_level,
 			'log_directory'    => $log_directory,
 			'updated'          => time(),
 		];
 
+		$new_config_json = wp_json_encode( $config, JSON_PRETTY_PRINT );
+
+		// Hash-based change detection: skip write if config hasn't changed
+		// This reduces concurrent write conflicts and unnecessary disk I/O
+		if ( file_exists( $config_file ) ) {
+			$existing_content = file_get_contents( $config_file );
+			if ( false !== $existing_content ) {
+				$existing_config = json_decode( $existing_content, true );
+				if ( is_array( $existing_config ) ) {
+					// Compare all fields except 'updated' timestamp
+					unset( $existing_config['updated'], $config['updated'] );
+					if ( $existing_config === $config ) {
+						// Config unchanged, but still update site map in case it's missing
+						self::update_site_map( $site_identifier, $config_filename );
+						return true;
+					}
+					// Restore 'updated' for new config
+					$config['updated'] = time();
+					$new_config_json   = wp_json_encode( $config, JSON_PRETTY_PRINT );
+				}
+			}
+		}
+
 		// Write config atomically to prevent corruption during reads
 		$temp_file = $config_file . '.tmp.' . uniqid();
 		$result    = false;
-		if ( false !== file_put_contents( $temp_file, wp_json_encode( $config, JSON_PRETTY_PRINT ), LOCK_EX ) ) {
-			$result = rename( $temp_file, $config_file );
+		if ( false !== file_put_contents( $temp_file, $new_config_json, LOCK_EX ) ) {
+			// Clear stat cache for accurate file existence check (prevents stale cached values)
+			clearstatcache( true, $temp_file );
+
+			// Verify temp file still exists before renaming (race condition protection)
+			if ( file_exists( $temp_file ) ) {
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Silencing rename errors to prevent warnings in edge cases
+				$result = @rename( $temp_file, $config_file );
+			}
+
+			// Clean up temp file if rename failed and file still exists
+			clearstatcache( true, $temp_file );
+			if ( ! $result && file_exists( $temp_file ) ) {
+				@unlink( $temp_file );
+			}
+		}
+
+		// Update site map with this site's entry
+		if ( $result ) {
+			self::update_site_map( $site_identifier, $config_filename );
 		}
 
 		return $result;
@@ -1546,7 +1758,16 @@ class GTG_Proxy {
 		
 		// Use plugins_url() for direct file access (like Google Site Kit)
 		// This bypasses WordPress rewrite rules entirely
-		return plugins_url( 'pmw-gtg-proxy.php', __FILE__ );
+		$proxy_url = plugins_url( 'pmw-gtg-proxy.php', __FILE__ );
+		$site_url  = get_site_url();
+
+		// Ensure proxy URL uses the same protocol as the site URL
+		// plugins_url() may return HTTP even when site uses HTTPS (e.g., when called from CLI)
+		if ( 0 === strpos( $site_url, 'https://' ) && 0 === strpos( $proxy_url, 'http://' ) ) {
+			$proxy_url = 'https://' . substr( $proxy_url, 7 );
+		}
+
+		return $proxy_url;
 	}
 	
 	/**

@@ -1,18 +1,18 @@
 === Pixel Manager for WooCommerce – Track Conversions and Analytics, Google Ads, TikTok and more ===
 Contributors: alekv, wolfbaer, freemius
-Tags: woocommerce, google analytics, google ads, facebook pixel, conversion tracking
+Tags: woocommerce, google analytics, conversion tracking, facebook pixel, tiktok pixel
 Requires at least: 3.7
 Tested up to: 6.9
 Requires PHP: 7.3
-Stable tag: 1.53.0
+Stable tag: 1.56.0
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
-Track visitors and conversions for WooCommerce Google Analytics GA4, Google Ads, Meta (Facebook, Instagram), TikTok, Microsoft, and many more!
+WooCommerce conversion tracking for Google Ads, GA4, Meta Pixel, TikTok & more. Server-side tracking recovers 30% more conversions!
 
 == Description ==
 
-Boost your sales and cut advertising costs with the Pixel Manager, a plugin that excels in precise e-commerce tracking.
+The Pixel Manager is the most complete WooCommerce conversion tracking plugin for Google Analytics GA4, Google Ads, Meta/Facebook Pixel, TikTok, Microsoft Ads, and more. Track all e-commerce events with pixel-perfect accuracy, use server-side tracking (CAPI) to capture conversions that browser tracking misses, and recover lost conversions automatically with our unique Automatic Conversion Recovery (ACR) feature.
 
 🚀 Endorsed by Google’s Tag Team – a big deal, right?
 
@@ -20,13 +20,21 @@ Boost your sales and cut advertising costs with the Pixel Manager, a plugin that
 
 [says @dpackert24](https://wordpress.org/support/topic/simple-easy-to-use-does-what-it-says-on-the-tin/)
 
+> This plugin was demonstrated to me by a Google Tagging Support person. ‘nough said 🙂
+
+[says @galbaras](https://wordpress.org/support/topic/simple-functional-free/)
+
+> We’re using this for our biggest clients and it’s working great!
+
+[says @wodobo](https://wordpress.org/support/topic/were-using-this-for-our-biggest-clients-and-its-working-great/)
+
 > Pixel Manager for WooCommerce is the go-to plugin for both tech wizards and casual users.
 
 [says @chxz](https://wordpress.org/support/topic/the-go-to-plugin-tracking-everything/)
 
-This plugin tracks WooCommerce shop visitors and collects valuable data for conversion optimization of your shop and paid ads, dynamic remarketing, and reporting. It's designed to boost sales and cut advertising costs through precise e-commerce tracking.
+This WooCommerce tracking plugin collects valuable data for conversion optimization, dynamic remarketing audiences, and detailed reporting. Server-side tracking (Conversion API / CAPI) ensures more reliable first-party data collection with improved attribution accuracy – capturing conversions that traditional browser-only tracking misses.
 
-The Pixel Manager integrates smoothly with platforms like Google Analytics, Google Ads, Meta (Facebook, Instagram), Hotjar, Microsoft (Pro), and TikTok (Pro).
+The Pixel Manager integrates smoothly with platforms like Google Analytics GA4, Google Ads, Meta (Facebook, Instagram), Hotjar, Microsoft Ads (Pro), TikTok (Pro), Pinterest (Pro), Snapchat (Pro), LinkedIn (Pro), and more.
 
 [youtube https://www.youtube.com/watch?v=BW0Tzyu2HaU]
 
@@ -48,7 +56,7 @@ Accuracy, simplicity, innovation.
 
 There is an extensive feature range in the free and especially the pro version.
 
-Unique tools like the [Payment Gateway Accuracy Report](https://sweetcode.com/docs/wpm/diagnostics?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=payment-gateway-accuracy-report#payment-gateway-tracking-accuracy-report) and [ACR](https://sweetcode.com/docs/wpm/features/acr?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=acr) (Pro).
+Unique tools like the [Payment Gateway Accuracy Report](https://sweetcode.com/docs/pmw/diagnostics?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=payment-gateway-accuracy-report#payment-gateway-tracking-accuracy-report) and [ACR](https://sweetcode.com/docs/pmw/features/acr?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=acr) (Pro).
 
 <strong>News</strong>
 
@@ -79,11 +87,11 @@ Unique tools like the [Payment Gateway Accuracy Report](https://sweetcode.com/do
 * Google Ads Cart Data tracking
 * Consent management platform compatibility
 * Google Analytics Enhanced E-Commerce
-* [Payment Gateway Accuracy Report](https://sweetcode.com/docs/wpm/diagnostics?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=payment-gateway-accuracy-report#payment-gateway-tracking-accuracy-report)
+* [Payment Gateway Accuracy Report](https://sweetcode.com/docs/pmw/diagnostics?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=payment-gateway-accuracy-report#payment-gateway-tracking-accuracy-report)
 * Google Ads Enhanced Conversions (Pro)
 * Server-side tracking for many platforms (Pro)
 * Meta Conversion API (Pro)
-* [Automatic Conversion Recovery (ACR)](https://sweetcode.com/docs/wpm/features/acr?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=acr) (Pro)
+* [Automatic Conversion Recovery (ACR)](https://sweetcode.com/docs/pmw/features/acr?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=acr) (Pro)
 
 <strong>Free Features</strong>
 
@@ -100,14 +108,18 @@ Unique tools like the [Payment Gateway Accuracy Report](https://sweetcode.com/do
 * Basic Order Duplication Prevention
 * Many useful filters that help tweak the plugin output
 * Works with lazy loaded product lists
-* [Payment gateway accuracy report](https://sweetcode.com/docs/wpm/diagnostics?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=payment-gateway-accuracy-report#payment-gateway-tracking-accuracy-report)
+* [Payment gateway accuracy report](https://sweetcode.com/docs/pmw/diagnostics?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=payment-gateway-accuracy-report#payment-gateway-tracking-accuracy-report)
 
-Have a look at the full feature list over [here](https://sweetcode.com/docs/wpm/features).
+Have a look at the full feature list over [here](https://sweetcode.com/docs/pmw/features).
 
 <strong>Premium Pixels</strong>
 
+* Adroll Ads
+* Contentsquare Statistics
+* CrazyEgg Analytics
 * LinkedIn Ads
 * Microsoft Ads
+* Outbrain Ads
 * Pinterest Ads
 * Reddit Ads
 * Snapchat Ads
@@ -118,7 +130,7 @@ Have a look at the full feature list over [here](https://sweetcode.com/docs/wpm/
 
 <strong>Premium Features</strong>
 
-* [Automatic Conversion Recovery (ACR)](https://sweetcode.com/docs/wpm/features/acr?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=acr)
+* [Automatic Conversion Recovery (ACR)](https://sweetcode.com/docs/pmw/features/acr?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=acr)
 * Advanced Order Duplication Prevention
 * Google Ads Enhanced Conversions
 * Google Ads Conversion Adjustments
@@ -128,13 +140,13 @@ Have a look at the full feature list over [here](https://sweetcode.com/docs/wpm/
 * Scroll Tracking
 * Automatic Phone and Link Click Tracking
 
-Have a look at the full feature list over [here](https://sweetcode.com/docs/wpm/features).
+Have a look at the full feature list over [here](https://sweetcode.com/docs/pmw/features).
 
 Are you interested in buying the [Pro version](https://sweetcode.com)? Come and visit us [here](https://sweetcode.com).
 
 <strong>Documentation</strong>
 
-Link to the full documentation of the plugin: [Open the documentation](https://sweetcode.com/docs/wpm/?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs)
+Link to the full documentation of the plugin: [Open the documentation](https://sweetcode.com/docs/pmw/?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs)
 
 <strong>Consent Management</strong>
 
@@ -142,7 +154,9 @@ The plugin uses data from several Consent Management plugins to manage approvals
 
 It works with the following Consent Management plugins out of the box:
 
+* [Beautiful and Responsive Cookie Consent](https://wordpress.org/plugins/beautiful-and-responsive-cookie-consent/)
 * [Cookiebot](https://wordpress.org/plugins/cookiebot/)
+* [Cookie Confirm](https://cookieconfirm.com/)
 * [Cookie Script](https://wordpress.org/plugins/cookie-script-com/)
 * [Complianz GDPR/CCPA Cookie Consent](https://wordpress.org/plugins/complianz-gdpr/)
 * [Cookie Notice](https://wordpress.org/plugins/cookie-notice/)
@@ -156,11 +170,11 @@ It works with the following Consent Management plugins out of the box:
 * [WP Consent API](https://wordpress.org/plugins/wp-consent-api/)
 * [WP Cookie Consent](https://wordpress.org/plugins/gdpr-cookie-consent/)
 
-Please read the following for additional [setup information](https://sweetcode.com/docs/wpm/consent-management/platforms?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=cookie-consent-plugins)
+Please read the following for additional [setup information](https://sweetcode.com/docs/pmw/consent-management/platforms?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=cookie-consent-plugins)
 
 <strong>Requirements</strong>
 
-[List of requirements](https://sweetcode.com/docs/wpm/setup/requirements?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=requirements)
+[List of requirements](https://sweetcode.com/docs/pmw/setup/requirements?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs&utm_content=requirements)
 
 <strong>Security Review</strong>
 
@@ -183,17 +197,29 @@ We are committed to ensuring the security of our customers and their data. If yo
 4. In the WordPress admin panel go to WooCommerce and then into the 'Google Ads Conversion Tracking' menu. Please enter the conversion ID and the conversion label into their respective fields.
 
 5. Head over to our documentation and follow our installation guides. Here are some of our most popular guides:
- * [Google Ads](https://sweetcode.com/docs/wpm/plugin-configuration/google-ads)
- * [Google Analytics](https://sweetcode.com/docs/wpm/plugin-configuration/google-analytics)
- * [Meta (Facebook)](https://sweetcode.com/docs/wpm/plugin-configuration/meta)
+ * [Google Ads](https://sweetcode.com/docs/pmw/plugin-configuration/google-ads)
+ * [Google Analytics](https://sweetcode.com/docs/pmw/plugin-configuration/google-analytics)
+ * [Meta (Facebook)](https://sweetcode.com/docs/pmw/plugin-configuration/meta)
 
-6. And read through our [FAQ](https://sweetcode.com/docs/wpm/faq).
+6. And read through our [FAQ](https://sweetcode.com/docs/pmw/faq).
 
 == Frequently Asked Questions ==
 
+= How does Pixel Manager compare to Google Tag Manager? =
+
+While Google Tag Manager is free, it requires significant technical expertise and time to configure properly for WooCommerce e-commerce tracking. The Pixel Manager provides a turnkey solution optimized specifically for WooCommerce with over 12 years of development. It automatically configures the correct settings, handles edge cases like payment gateway redirects, and includes unique features like Automatic Conversion Recovery (ACR) that GTM cannot replicate. Most users find Pixel Manager saves dozens of hours compared to manual GTM setup.
+
+= What is server-side tracking and why does it matter? =
+
+Server-side tracking (also called Conversion API or CAPI) sends conversion data directly from your server to advertising platforms, rather than relying solely on browser-based pixels. This results in more reliable tracking because it works even when browser tracking is limited by privacy settings, cookie restrictions (like Safari ITP), or network issues. Our Pro version includes server-side tracking for Meta (Facebook CAPI), TikTok Events API, Pinterest APIC, Snapchat CAPI, Reddit CAPI, and Google Analytics 4 Measurement Protocol – typically recovering up to 30% more conversions.
+
+= How does Automatic Conversion Recovery (ACR) work? =
+
+ACR is our unique Pro feature that automatically recovers conversions that were missed due to tracking issues – whether from payment gateway redirects, browser limitations, or network problems. It runs nightly, identifies orders that weren't properly tracked, and sends the conversion data to your advertising platforms retroactively (within the allowed attribution windows). This can recover approximately 50% of otherwise lost conversions, directly improving your campaign performance and ROAS.
+
 = Is there detailed documentation for the plugin? =
 
-Yes. Head over to this link: [Documentation](https://sweetcode.com/docs/wpm/?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs)
+Yes. Head over to this link: [Documentation](https://sweetcode.com/docs/pmw/?utm_source=wordpress.org&utm_medium=wpm-plugin-page&utm_campaign=pixel-manager-for-woocommerce-docs)
 
 = How do I check if the plugin is working properly? =
 
@@ -259,7 +285,7 @@ No. The plugin is very lightweight and fast.
 
 = Do you have videos that show how to set up the plugin and get most out of it? =
 
-Yes, they are part of the step by step documentation. Head over to this link: [Documentation](https://sweetcode.com/docs/wpm/)
+Yes, they are part of the step by step documentation. Head over to this link: [Documentation](https://sweetcode.com/docs/pmw/)
 
 = I get a fatal error and I am running old versions of WordPress and/or WooCommerce. What can I do? =
 
@@ -300,6 +326,53 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 1. Settings page
 
 == Changelog ==
+
+= 1.56.0  =
+*Release date - 02.02.2026*
+
+* Tweak: Google Tag Gateway Proxy: Improved handling of config file
+
+= 1.55.1  =
+*Release date - 29.01.2026*
+
+* Fix: Fixed the bug which did not save the dismissed button click in the database for the trial notification
+
+= 1.55.0  =
+*Release date - 26.01.2026*
+
+* Tweak: Activated an opportunity notification for the Google Tag Gateway Proxy feature
+* Tweak: Updated pixel registry adapter capabilities for consistency with the decentralized architecture
+* Tweak: Added filter to control output of cart item data inline script for theme compatibility
+* Tweak: Refactored the internal event handling system for better maintainability
+* Tweak: Large refactor which renamed wpm to pmw
+* Tweak: Enhanced event handling for product variations and improve conditional triggers
+* Tweak: Enhanced active opportunities notification with impact level breakdown and improved styling
+* Tweak: Revamped rating notice UI and logic for better user experience
+* Tweak: Enhanced opportunities header with statistics and dismissal tracking
+* Tweak: Added backup section styles and improve table row highlighting
+* Tweak: Updated documentation links to use the new path structure
+* Tweak: Added Cookie Confirm CMP integration
+* Tweak: Added support for Beautiful and Responsive Cookie Consent plugin
+* Tweak: Updated script behavior for tracking on specific pages when Flying Press is active
+* Tweak: Enhanced race condition protection when renaming temporary config file in GTG_Proxy
+* Tweak: Improved proxy URL handling based on GTG handler type in Pixel Manager
+* Tweak: Updated GTG handler detection logic to rely on session cache and remove unnecessary server-side checks
+* Tweak: Updated GTG proxy config cache handling on activation and improve config file management
+* Fix: Add back view_cart event listener
+* Fix: Prevent division by zero for free orders in order value calculation
+
+= 1.54.1  =
+*Release date - 15.12.2025*
+
+* Tweak: Added a missing check for Contentsquare
+
+= 1.54.0  =
+*Release date - 15.12.2025*
+* Tweak: Admin UX improvements in the settings page.
+* Tweak: Refactored opportunity card output: sort by impact level and streamline dismissed opportunities
+* Tweak: Enhanced client IP address handling
+* Tweak: Added external object cache detection and enhanced debug info output
+* Tweak: Enhanced transient handling: add verification for transient storage to improve reliability with external object caches
 
 = 1.53.0  =
 *Release date - 09.12.2025*

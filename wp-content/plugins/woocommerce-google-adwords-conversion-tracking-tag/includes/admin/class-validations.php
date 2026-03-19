@@ -359,12 +359,9 @@ class Validations {
 		}
 
 		// Validate LinkedIn conversion IDs
-		$input = self::validate_linkedin_conversion_id($input, 'add_to_cart');
-		$input = self::validate_linkedin_conversion_id($input, 'start_checkout');
-		$input = self::validate_linkedin_conversion_id($input, 'purchase');
-		$input = self::validate_linkedin_conversion_id($input, 'search');
 		$input = self::validate_linkedin_conversion_id($input, 'view_content');
-		$input = self::validate_linkedin_conversion_id($input, 'add_to_list');
+		$input = self::validate_linkedin_conversion_id($input, 'add_to_cart');
+		$input = self::validate_linkedin_conversion_id($input, 'purchase');
 
 		// validate Outbrain advertiser ID
 		if (isset($input['pixels']['outbrain']['advertiser_id'])) {
@@ -555,6 +552,30 @@ class Validations {
 			}
 		}
 
+		// Validate CrazyEgg account number
+		if (isset($input['crazyegg']['account_number'])) {
+
+			// Trim space, newlines and quotes
+			$input['crazyegg']['account_number'] = Helpers::trim_string($input['crazyegg']['account_number']);
+
+			// Extract account number from full script tag if pasted
+			// Pattern: //script.crazyegg.com/pages/scripts/0131/9772.js -> 01319772
+			if (preg_match('/script\.crazyegg\.com\/pages\/scripts\/(\d+)\/(\d+)\.js/', $input['crazyegg']['account_number'], $matches)) {
+				$input['crazyegg']['account_number'] = $matches[1] . $matches[2];
+			} else {
+				// Strip all non-digits (handles formats like 0131/9772 or 0131-9772)
+				$input['crazyegg']['account_number'] = preg_replace('/\D/', '', $input['crazyegg']['account_number']);
+			}
+
+			if (!self::is_crazyegg_account_number($input['crazyegg']['account_number'])) {
+				$input['crazyegg']['account_number']
+					= Options::get_crazyegg_account_number()
+					? Options::get_crazyegg_account_number()
+					: '';
+				add_settings_error('wgact_plugin_options', 'invalid-crazyegg-account-number', esc_html__('You have entered an invalid CrazyEgg account number. It must be exactly 8 digits.', 'woocommerce-google-adwords-conversion-tracking-tag'));
+			}
+		}
+
 		// Validate Reddit advertiser ID
 		if (isset($input['pixels']['reddit']['advertiser_id'])) {
 
@@ -642,6 +663,21 @@ class Validations {
 					? Options::get_ab_tasty_account_id()
 					: '';
 				add_settings_error('wgact_plugin_options', 'invalid-vwo-account-id', esc_html__('You have entered an invalid AB Tasty account ID.', 'woocommerce-google-adwords-conversion-tracking-tag'));
+			}
+		}
+
+		// Validate the Contentsquare tag ID
+		if (isset($input['pixels']['contentsquare']['tag_id'])) {
+
+			// Trim space, newlines and quotes
+			$input['pixels']['contentsquare']['tag_id'] = Helpers::trim_string($input['pixels']['contentsquare']['tag_id']);
+
+			if (!self::is_contentsquare_tag_id($input['pixels']['contentsquare']['tag_id'])) {
+				$input['pixels']['contentsquare']['tag_id']
+					= Options::get_contentsquare_tag_id()
+					? Options::get_contentsquare_tag_id()
+					: '';
+				add_settings_error('wgact_plugin_options', 'invalid-contentsquare-tag-id', esc_html__('You have entered an invalid Contentsquare tag ID.', 'woocommerce-google-adwords-conversion-tracking-tag'));
 			}
 		}
 
@@ -985,6 +1021,13 @@ class Validations {
 		return self::validate_with_regex($re, $string);
 	}
 
+	public static function is_crazyegg_account_number( $string ) {
+
+		$re = '/^\d{8}$/m';
+
+		return self::validate_with_regex($re, $string);
+	}
+
 	public static function is_reddit_advertiser_id( $string ) {
 
 		$re = '/^(a2_|t2_)[a-z0-9]{4,12}$/m';
@@ -1025,6 +1068,14 @@ class Validations {
 	public static function is_ab_tasty_account_id( $string ) {
 
 		$re = '/^[\da-z]{26,38}$/m';
+
+		return self::validate_with_regex($re, $string);
+	}
+
+	public static function is_contentsquare_tag_id( $string ) {
+
+		// Contentsquare tag ID format: alphanumeric string like b457e22cc0c6e
+		$re = '/^[a-z0-9]{10,20}$/m';
 
 		return self::validate_with_regex($re, $string);
 	}

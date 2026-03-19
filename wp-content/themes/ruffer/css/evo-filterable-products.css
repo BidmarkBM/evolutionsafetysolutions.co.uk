@@ -1,0 +1,512 @@
+/* ------------------------------------------------------------------ */
+/*  Evo Filterable Products – Styles (Ruffer theme)                   */
+/* ------------------------------------------------------------------ */
+
+.evo-filterable-products {
+	position: relative;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Outer layout: sidebar + main                                      */
+/* ------------------------------------------------------------------ */
+.evo-filterable-products .evo-layout {
+	display: flex;
+	align-items: flex-start;
+	gap: 30px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Sidebar                                                           */
+/* ------------------------------------------------------------------ */
+.evo-filterable-products .evo-sidebar {
+	width: 260px;
+	flex-shrink: 0;
+}
+
+.evo-filterable-products .evo-sidebar-inner {
+	position: sticky;
+	top: 100px; /* adjust if you have a taller sticky header */
+	background: #f8f9fa;
+	border: 1px solid #e8e8e8;
+	border-radius: 6px;
+	padding: 20px 18px;
+}
+
+.evo-filterable-products .evo-sidebar-title {
+	margin: 0 0 16px;
+	padding-bottom: 12px;
+	border-bottom: 2px solid #e0e0e0;
+	font-size: 15px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #333;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Filter groups (label + control)                                   */
+/* ------------------------------------------------------------------ */
+.evo-filter-group {
+	margin-bottom: 16px;
+}
+
+.evo-filter-group:last-child {
+	margin-bottom: 0;
+}
+
+.evo-filter-label {
+	display: block;
+	margin-bottom: 5px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: #888;
+}
+
+.evo-sidebar .evo-filter-group select,
+.evo-sidebar .evo-filter-group input[type='number'],
+.evo-sidebar .evo-filter-group input[type='text'] {
+	width: 100%;
+	padding: 9px 11px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 14px;
+	background: #fff;
+	box-sizing: border-box;
+	color: #333;
+	appearance: auto;
+	height: unset !important;
+}
+
+.evo-sidebar .evo-filter-group select:focus,
+.evo-sidebar .evo-filter-group input:focus {
+	outline: none;
+	border-color: #999;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Price filter (two inputs + button stacked)                        */
+/* ------------------------------------------------------------------ */
+.evo-price-filter {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+}
+
+.evo-price-filter input {
+	/* already styled by the group rule above */
+}
+
+.evo-price-go {
+	grid-column: 1 / -1;
+	width: 100%;
+	padding: 9px !important;
+	font-size: 13px !important;
+	cursor: pointer;
+	text-align: center;
+	background-color: #1371ce !important;
+	color: #fff;
+	padding: 10px 40px;
+	border-radius: 30px;
+	width: 100%;
+	margin-top: 10px;
+	text-align: center;
+	border: none;
+	font-size: 1em !important;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main content area (right of sidebar)                             */
+/* ------------------------------------------------------------------ */
+
+.evo-filterable-products {
+	padding-top: 1em;
+}
+.evo-filterable-products .evo-main {
+	flex: 1;
+	min-width: 0; /* prevent flex blowout */
+	position: relative;
+}
+
+.evo-filterable-products .product-wrapper {
+	padding-top: 0 !important;
+}
+.evo-filterable-products .product-wrapper.product.type-product {
+	margin-bottom: 1em;
+}
+
+.evo-filterable-products
+	.product-wrapper.product.type-product
+	.th-product
+	.product-img
+	img {
+	height: unset;
+	object-fit: contain;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Active filter pills                                               */
+/* ------------------------------------------------------------------ */
+.evo-active-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 15px;
+}
+
+.evo-active-filters:empty {
+	display: none;
+}
+
+.evo-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	background: #e8e8e8;
+	border-radius: 20px;
+	font-size: 13px;
+}
+
+.evo-pill button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+	padding: 0;
+	color: #666;
+}
+
+.evo-pill button:hover {
+	color: #c00;
+}
+
+.evo-clear-all {
+	font-size: 13px !important;
+	padding: 5px 20px !important;
+	background-color: #c00;
+	color: #fff;
+	border-radius: 20px;
+	border: none;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Loading overlay (scoped to .evo-main which has position:relative) */
+/* ------------------------------------------------------------------ */
+.evo-loading {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	min-height: 120px;
+	background: rgba(255, 255, 255, 0.75);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 99;
+	font-size: 16px;
+	border-radius: 4px;
+}
+
+.evo-spinner {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	border: 3px solid #ccc;
+	border-top-color: #333;
+	border-radius: 50%;
+	animation: evo-spin 0.6s linear infinite;
+	margin-right: 8px;
+}
+
+@keyframes evo-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/*  Product grid – Ruffer theme markup                                */
+/*                                                                    */
+/*  Structure:                                                        */
+/*    .woocommerce.columns-N                                          */
+/*      └─ .row                          (loop wrapper)               */
+/*          ├─ .product-wrapper.product  (each product)               */
+/*          │   └─ .th-product                                        */
+/*          │       ├─ .product-img                                   */
+/*          │       └─ .product-content                               */
+/*          ├─ .product-wrapper.product                               */
+/*          └─ …                                                      */
+/* ------------------------------------------------------------------ */
+
+/* The .row container is the flex parent */
+.evo-filterable-products .woocommerce .row,
+.evo-filterable-products.woocommerce .row {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	margin-right: -15px;
+	margin-left: -15px;
+}
+
+/* ---- 4 columns (default) ---- */
+.evo-filterable-products.columns-4 .row > .product-wrapper,
+.evo-filterable-products .woocommerce.columns-4 .row > .product-wrapper {
+	flex: 0 0 25%;
+	max-width: 25%;
+	padding: 15px;
+	box-sizing: border-box;
+}
+
+/* ---- 3 columns ---- */
+.evo-filterable-products.columns-3 .row > .product-wrapper,
+.evo-filterable-products .woocommerce.columns-3 .row > .product-wrapper {
+	flex: 0 0 33.333%;
+	max-width: 33.333%;
+	padding: 15px;
+	box-sizing: border-box;
+}
+
+/* ---- 2 columns ---- */
+.evo-filterable-products.columns-2 .row > .product-wrapper,
+.evo-filterable-products .woocommerce.columns-2 .row > .product-wrapper {
+	flex: 0 0 50%;
+	max-width: 50%;
+	padding: 15px;
+	box-sizing: border-box;
+}
+
+/* ---- 1 column ---- */
+.evo-filterable-products.columns-1 .row > .product-wrapper,
+.evo-filterable-products .woocommerce.columns-1 .row > .product-wrapper {
+	flex: 0 0 100%;
+	max-width: 100%;
+	padding: 15px;
+	box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Fallback: if .row is missing and products are direct children     */
+/*  of .woocommerce (some WC template overrides do this)              */
+/* ------------------------------------------------------------------ */
+.evo-filterable-products .woocommerce > .product-wrapper,
+.evo-filterable-products.woocommerce > .product-wrapper {
+	padding: 15px;
+	box-sizing: border-box;
+}
+
+.evo-filterable-products.columns-4 > .woocommerce > .product-wrapper {
+	flex: 0 0 25%;
+	max-width: 25%;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Also handle standard <ul>/<li> WC markup as a safety net          */
+/*  (in case a template update changes the loop output)               */
+/* ------------------------------------------------------------------ */
+.evo-filterable-products ul.products {
+	display: flex !important;
+	flex-wrap: wrap;
+	margin: 0 -15px;
+	padding: 0;
+	list-style: none;
+}
+
+.evo-filterable-products ul.products li.product {
+	padding: 15px;
+	box-sizing: border-box;
+}
+
+.evo-filterable-products.columns-4 ul.products li.product {
+	flex: 0 0 25%;
+	max-width: 25%;
+}
+.evo-filterable-products.columns-3 ul.products li.product {
+	flex: 0 0 33.333%;
+	max-width: 33.333%;
+}
+.evo-filterable-products.columns-2 ul.products li.product {
+	flex: 0 0 50%;
+	max-width: 50%;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Product card styling (match Ruffer theme)                         */
+/* ------------------------------------------------------------------ */
+.evo-filterable-products .th-product {
+	position: relative;
+	overflow: hidden;
+	background: #fff;
+	border-radius: 4px;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.evo-filterable-products .th-product .product-img {
+	position: relative;
+	overflow: hidden;
+}
+
+.evo-filterable-products .th-product .product-img img {
+	width: 100%;
+	height: auto;
+	display: block;
+}
+
+.evo-filterable-products .th-product .product-content {
+	padding: 15px;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.evo-filterable-products .th-product .product-title {
+	margin: 0 0 8px;
+	font-size: 16px;
+	line-height: 1.3;
+}
+
+.evo-filterable-products .th-product .product-title a {
+	text-decoration: none;
+	color: inherit;
+}
+
+.evo-filterable-products .th-product .price {
+	font-weight: 600;
+	margin-top: auto;
+}
+
+/* Hover actions overlay */
+.evo-filterable-products .th-product .actions {
+	position: absolute;
+	bottom: 10px;
+	left: 0;
+	right: 0;
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.evo-filterable-products .th-product:hover .actions {
+	opacity: 1;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Responsive                                                        */
+/* ------------------------------------------------------------------ */
+
+/* Narrow sidebar: shrink a little on medium screens */
+@media (max-width: 1100px) {
+	.evo-filterable-products .evo-sidebar {
+		width: 220px;
+	}
+}
+
+/* Tablet: collapse sidebar above grid, 2-col products */
+@media (max-width: 860px) {
+	.evo-filterable-products .evo-layout {
+		flex-direction: column;
+	}
+
+	.evo-filterable-products .evo-sidebar {
+		width: 100%;
+	}
+
+	.evo-filterable-products .evo-sidebar-inner {
+		position: static;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		align-items: flex-end;
+		padding: 16px;
+	}
+
+	.evo-filterable-products .evo-sidebar-title {
+		width: 100%;
+		margin-bottom: 0;
+		padding-bottom: 8px;
+	}
+
+	.evo-filter-group {
+		flex: 1 1 180px;
+		margin-bottom: 0;
+	}
+
+	.evo-filterable-products .evo-sidebar .evo-filter-group select,
+	.evo-filterable-products
+		.evo-sidebar
+		.evo-filter-group
+		input[type='number'],
+	.evo-filterable-products .evo-sidebar .evo-filter-group input[type='text'] {
+		width: 100%;
+	}
+
+	.evo-filterable-products .evo-row > .product-wrapper,
+	.evo-filterable-products ul.products li.product {
+		flex: 0 0 50% !important;
+		max-width: 50% !important;
+	}
+}
+
+/* Mobile: 1 column */
+@media (max-width: 575px) {
+	.evo-filterable-products .row > .product-wrapper,
+	.evo-filterable-products ul.products li.product {
+		flex: 0 0 100% !important;
+		max-width: 100% !important;
+	}
+
+	.evo-filter-group {
+		flex: 1 1 100%;
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/*  Pagination                                                        */
+/* ------------------------------------------------------------------ */
+.evo-product-grid .woocommerce-pagination {
+	margin-top: 20px;
+	clear: both;
+}
+
+.evo-product-grid .woocommerce-pagination ul {
+	display: flex;
+	justify-content: center;
+	gap: 5px;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.evo-product-grid .woocommerce-pagination ul li a,
+.evo-product-grid .woocommerce-pagination ul li span {
+	display: inline-block;
+	padding: 8px 14px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	text-decoration: none;
+	color: #333;
+}
+
+.evo-product-grid .woocommerce-pagination ul li span.current {
+	background: #333;
+	color: #fff;
+	border-color: #333;
+}
+
+.evo-product-grid .woocommerce-pagination ul li a:hover {
+	background: #f5f5f5;
+}
+
+/* Result count */
+.evo-product-grid .woocommerce-result-count {
+	text-align: center;
+	margin-top: 10px;
+	color: #666;
+	font-size: 14px;
+}

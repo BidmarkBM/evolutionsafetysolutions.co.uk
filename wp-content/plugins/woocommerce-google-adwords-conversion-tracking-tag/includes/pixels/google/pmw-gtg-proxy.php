@@ -1,14 +1,18 @@
 <?php
 /**
- * Pixel Manager for WooCommerce - Isolated Google Tag Gateway Proxy
+ * Pixel Manager for WooCommerce - Standalone Google Tag Gateway Proxy
  *
  * This file runs completely independently of WordPress for maximum performance.
- * Configuration is read from a cache file written by WordPress when settings change.
+ * Configuration is read from wp-content/uploads/pmw-gtg/ written by WordPress when settings change.
  *
  * Performance benefits:
  * - Bypasses WordPress core loading (saves 15-25MB memory)
  * - Bypasses plugin/theme loading (saves 5-15MB memory)
  * - Response time: 50-150ms vs 200-500ms with WordPress
+ *
+ * Defensive behavior:
+ * - Returns 503 with X-PMW-Fallback: wordpress header if config cannot be loaded
+ * - JavaScript client detects this and switches to WordPress proxy
  *
  * @package PMW
  * @since   1.53.0
@@ -19,31 +23,305 @@ if ( ! defined( 'PMW_GTG_STANDALONE' ) ) {
 	define( 'PMW_GTG_STANDALONE', true );
 }
 
-// Health check endpoint - fastest possible response
-if ( isset( $_GET['healthCheck'] ) ) {
-	// Lightweight logging for health check
-	$config_file = __DIR__ . '/pmw-gtg-config.json';
-	if ( file_exists( $config_file ) ) {
-		$config = json_decode( file_get_contents( $config_file ), true );
-		if ( $config && ! empty( $config['logging_enabled'] ) && ! empty( $config['log_directory'] ) ) {
-			$log_level = isset( $config['log_level'] ) ? $config['log_level'] : 'error';
-			// Only log if level allows info messages (debug=7, info=6, notice=5, warning=4, error=3)
-			$level_priority = [ 'debug' => 7, 'info' => 6, 'notice' => 5, 'warning' => 4, 'error' => 3 ];
-			$configured_priority = isset( $level_priority[ $log_level ] ) ? $level_priority[ $log_level ] : 3;
-			
-			if ( 6 <= $configured_priority ) { // info level = 6
-				$wp_content = dirname( dirname( $config['log_directory'] ) );
-				$debug_log = $wp_content . '/debug.log';
-				$timestamp = gmdate( 'd-M-Y H:i:s \U\T\C' );
-				$log_entry = "[{$timestamp}] pmw [info] [GTG-Proxy-Isolated] Health check request received\n";
-				@file_put_contents( $debug_log, $log_entry, FILE_APPEND | LOCK_EX );
+/**
+ * Sanitize a file system path.
+ *
+ * Removes null bytes and normalizes the path for safe file system operations.
+ *
+ * @param string $path The path to sanitize.
+ * @return string The sanitized path.
+ * @since 1.53.0
+ */
+function pmw_gtg_sanitize_path( $path ) {
+	// Remove null bytes (security concern)
+	$path = str_replace( chr( 0 ), '', $path );
+	// Remove any non-printable characters
+	$path = preg_replace( '/[\x00-\x1F\x7F]/', '', $path );
+	// Normalize directory separators
+	$path = str_replace( '\\', '/', $path );
+	return $path;
+}
+
+/**
+ * Helper function to get wp-content path from current file location
+ *
+ * Navigates from plugin directory to wp-content.
+ * Current file: wp-content/plugins/{plugin-name}/includes/pixels/google/pmw-gtg-proxy.php
+ * Target: wp-content/
+ *
+ * @return string|false Path to wp-content or false if not found.
+ */
+function pmw_gtg_get_wp_content_path() {
+	// Method 1: Navigate up from __DIR__
+	$dir = __DIR__;
+	for ( $i = 0; $i < 10; $i++ ) {
+		$parent = dirname( $dir );
+		if ( 'wp-content' === basename( $parent ) ) {
+			return $parent;
+		}
+		$dir = $parent;
+
+		// Safety check: stop at filesystem root
+		if ( $dir === $parent ) {
+			break;
+		}
+	}
+
+	// Method 2: Try with realpath() to resolve symlinks
+	$dir = realpath( __DIR__ );
+	if ( $dir ) {
+		for ( $i = 0; $i < 10; $i++ ) {
+			$parent = dirname( $dir );
+			if ( 'wp-content' === basename( $parent ) ) {
+				return $parent;
+			}
+			$dir = $parent;
+
+			if ( $dir === $parent ) {
+				break;
 			}
 		}
 	}
-	
+
+	// Method 3: Try DOCUMENT_ROOT based path
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized via pmw_gtg_sanitize_path below.
+	$doc_root_raw = isset( $_SERVER['DOCUMENT_ROOT'] ) ? stripslashes( $_SERVER['DOCUMENT_ROOT'] ) : null;
+	if ( $doc_root_raw ) {
+		$doc_root = rtrim( pmw_gtg_sanitize_path( $doc_root_raw ), '/' );
+		$possible_paths = [
+			$doc_root . '/wp-content',
+			$doc_root . '/public/wp-content',      // GridPane/Trellis style
+			$doc_root . '/../wp-content',          // Some setups have public/web folder
+			dirname( $doc_root ) . '/wp-content',  // Alternative structure
+		];
+
+		foreach ( $possible_paths as $path ) {
+			$real_path = realpath( $path );
+			if ( $real_path && is_dir( $real_path ) ) {
+				return $real_path;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Helper function to get config directory path
+ *
+ * Tries multiple methods to find the config directory to handle
+ * various hosting configurations (symlinks, path mapping, etc.)
+ *
+ * @return string|false Path to config directory or false if not found.
+ */
+function pmw_gtg_get_config_directory() {
+	// Method 1: Standard wp-content based path
+	$wp_content = pmw_gtg_get_wp_content_path();
+	if ( $wp_content ) {
+		$config_dir = $wp_content . '/uploads/pmw-gtg';
+		if ( is_dir( $config_dir ) ) {
+			return $config_dir;
+		}
+	}
+
+	// Method 2: Try paths relative to __DIR__ with realpath
+	$dir = realpath( __DIR__ );
+	if ( $dir ) {
+		// Navigate to plugin root, then to wp-content/uploads/pmw-gtg
+		// From: includes/pixels/google -> plugin root -> plugins -> wp-content -> uploads -> pmw-gtg
+		$plugin_root = dirname( dirname( dirname( $dir ) ) ); // includes/pixels/google -> plugin root
+		$plugins_dir = dirname( $plugin_root );               // plugin root -> plugins
+		$wp_content  = dirname( $plugins_dir );               // plugins -> wp-content
+		$config_dir  = $wp_content . '/uploads/pmw-gtg';
+
+		if ( is_dir( $config_dir ) ) {
+			return $config_dir;
+		}
+	}
+
+	// Method 3: Try DOCUMENT_ROOT based paths
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized via pmw_gtg_sanitize_path below.
+	$doc_root_raw = isset( $_SERVER['DOCUMENT_ROOT'] ) ? stripslashes( $_SERVER['DOCUMENT_ROOT'] ) : null;
+	if ( $doc_root_raw ) {
+		$doc_root = rtrim( pmw_gtg_sanitize_path( $doc_root_raw ), '/' );
+		$possible_paths = [
+			$doc_root . '/wp-content/uploads/pmw-gtg',
+			$doc_root . '/public/wp-content/uploads/pmw-gtg',      // GridPane/Trellis style
+			dirname( $doc_root ) . '/wp-content/uploads/pmw-gtg',  // Alternative structure
+		];
+
+		foreach ( $possible_paths as $path ) {
+			if ( is_dir( $path ) ) {
+				return $path;
+			}
+			// Also try with realpath
+			$real_path = realpath( $path );
+			if ( $real_path && is_dir( $real_path ) ) {
+				return $real_path;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Helper function to get site identifier from request
+ *
+ * Extracts hostname and optional path prefix for multisite support.
+ *
+ * @return string Site identifier (hostname or hostname/path).
+ */
+function pmw_gtg_get_site_identifier() {
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Used for lookup only
+	$host = isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : '';
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Used for path extraction only
+	$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+
+	// Sanitize host: lowercase, remove port
+	$host = strtolower( $host );
+	if ( false !== strpos( $host, ':' ) ) {
+		$host = substr( $host, 0, strpos( $host, ':' ) );
+	}
+
+	// For subdirectory multisite, extract the first path segment
+	// Example: /site2/metrics/... -> site2
+	$path_prefix = '';
+	if ( ! empty( $request_uri ) && '/' !== $request_uri ) {
+		$parts = explode( '/', ltrim( $request_uri, '/' ) );
+		if ( ! empty( $parts[0] ) ) {
+			// Check if this looks like a site prefix (not a measurement path or file)
+			$first_segment = $parts[0];
+			// Skip if it's a query string or looks like a file extension
+			if ( false === strpos( $first_segment, '?' ) && false === strpos( $first_segment, '.' ) ) {
+				$path_prefix = $first_segment;
+			}
+		}
+	}
+
+	// Return hostname/path for subdirectory, hostname only for subdomain/single
+	if ( ! empty( $path_prefix ) ) {
+		return $host . '/' . $path_prefix;
+	}
+
+	return $host;
+}
+
+/**
+ * Helper function to find config file using site map
+ *
+ * @param string $config_dir Config directory path.
+ * @return string|false Config file path or false if not found.
+ */
+function pmw_gtg_find_config_file( $config_dir ) {
+	$site_map_file = $config_dir . '/site-map.json';
+
+	// Check if site map exists
+	if ( ! file_exists( $site_map_file ) ) {
+		return false;
+	}
+
+	// Read site map
+	$site_map_content = file_get_contents( $site_map_file );
+	if ( false === $site_map_content ) {
+		return false;
+	}
+
+	$site_map = json_decode( $site_map_content, true );
+	if ( ! is_array( $site_map ) ) {
+		return false;
+	}
+
+	// Get site identifier
+	$site_identifier = pmw_gtg_get_site_identifier();
+
+	// Try exact match first
+	if ( isset( $site_map[ $site_identifier ] ) ) {
+		$config_file = $config_dir . '/' . $site_map[ $site_identifier ];
+		if ( file_exists( $config_file ) ) {
+			return $config_file;
+		}
+	}
+
+	// Try hostname-only fallback (for subdirectory multisite where path might be in the URL)
+	$host_only = $site_identifier;
+	if ( false !== strpos( $site_identifier, '/' ) ) {
+		$host_only = substr( $site_identifier, 0, strpos( $site_identifier, '/' ) );
+	}
+
+	if ( isset( $site_map[ $host_only ] ) ) {
+		$config_file = $config_dir . '/' . $site_map[ $host_only ];
+		if ( file_exists( $config_file ) ) {
+			return $config_file;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Send fallback response signaling client to use WordPress proxy
+ *
+ * @param string $reason Reason for fallback (for debugging).
+ * @return void
+ */
+function pmw_gtg_send_fallback_response( $reason = 'unknown' ) {
+	http_response_code( 503 );
+	header( 'Content-Type: text/plain; charset=utf-8' );
+	header( 'X-PMW-Fallback: wordpress' );
+	header( 'X-PMW-Fallback-Reason: ' . $reason );
+	header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
+	echo 'Fallback to WordPress proxy';
+	exit;
+}
+
+// Health check endpoint - validates that the proxy is functional
+if ( isset( $_GET['healthCheck'] ) ) {
+	// Validate that config is accessible before returning "ok"
+	$config_dir = pmw_gtg_get_config_directory();
+	if ( ! $config_dir ) {
+		pmw_gtg_send_fallback_response( 'config-directory-not-found' );
+	}
+
+	$config_file = pmw_gtg_find_config_file( $config_dir );
+	if ( ! $config_file || ! file_exists( $config_file ) ) {
+		pmw_gtg_send_fallback_response( 'config-file-not-found' );
+	}
+
+	// Check config age (24 hours max)
+	if ( ( time() - filemtime( $config_file ) ) >= 86400 ) {
+		pmw_gtg_send_fallback_response( 'config-expired' );
+	}
+
+	// Read and validate config
+	$config = json_decode( file_get_contents( $config_file ), true );
+	if ( ! is_array( $config ) || ! isset( $config['enabled'], $config['measurement_path'] ) ) {
+		pmw_gtg_send_fallback_response( 'config-invalid' );
+	}
+
+	// Check if proxy is enabled
+	if ( empty( $config['enabled'] ) ) {
+		pmw_gtg_send_fallback_response( 'proxy-disabled' );
+	}
+
+	// Config is valid - log if enabled
+	if ( ! empty( $config['logging_enabled'] ) && ! empty( $config['log_directory'] ) ) {
+		$log_level = isset( $config['log_level'] ) ? $config['log_level'] : 'error';
+		$level_priority = [ 'debug' => 7, 'info' => 6, 'notice' => 5, 'warning' => 4, 'error' => 3 ];
+		$configured_priority = isset( $level_priority[ $log_level ] ) ? $level_priority[ $log_level ] : 3;
+
+		if ( 6 <= $configured_priority ) { // info level = 6
+			$wp_content = dirname( dirname( $config['log_directory'] ) );
+			$debug_log  = $wp_content . '/debug.log';
+			$timestamp  = gmdate( 'd-M-Y H:i:s \U\T\C' );
+			$log_entry  = "[{$timestamp}] pmw [info] [GTG-Proxy-Standalone] Health check request received - proxy functional\n";
+			@file_put_contents( $debug_log, $log_entry, FILE_APPEND | LOCK_EX );
+		}
+	}
+
 	http_response_code( 200 );
 	header( 'Content-Type: text/plain; charset=utf-8' );
-	header( 'X-PMW-GTG-Handler: isolated' );
+	header( 'X-PMW-GTG-Handler: standalone' );
 	echo 'ok';
 	exit;
 }
@@ -81,7 +359,7 @@ final class PMW_GTG_Proxy_Standalone {
 	 *
 	 * @var int
 	 */
-	const CACHE_MAX_AGE = 3600;
+	const CACHE_MAX_AGE = 86400;
 
 	/**
 	 * FPS path placeholder used by Google's response
@@ -439,7 +717,14 @@ final class PMW_GTG_Proxy_Standalone {
 	}
 
 	/**
-	 * Get proxy configuration from cache file or WordPress fallback
+	 * Get proxy configuration from cache file
+	 *
+	 * This standalone proxy requires the config file to be written by WordPress.
+	 * If the config file is missing, invalid, or expired, the proxy sends a fallback
+	 * response signaling the client to use the WordPress proxy instead.
+	 *
+	 * Configuration is stored in wp-content/uploads/pmw-gtg/ with a site map
+	 * for multisite support.
 	 *
 	 * @return array Configuration array
 	 */
@@ -448,32 +733,66 @@ final class PMW_GTG_Proxy_Standalone {
 			return self::$config;
 		}
 
-		// Try cache file first (fastest)
-		$cache_file = self::get_config_file_path();
-
-		if ( file_exists( $cache_file ) && ( time() - filemtime( $cache_file ) ) < self::CACHE_MAX_AGE ) {
-			$config = json_decode( file_get_contents( $cache_file ), true );
-			if ( $config && isset( $config['enabled'], $config['measurement_path'] ) ) {
-				self::$config = $config;
-				return $config;
-			}
+		// Step 1: Find wp-content directory
+		$wp_content = pmw_gtg_get_wp_content_path();
+		if ( ! $wp_content ) {
+			pmw_gtg_send_fallback_response( 'wp-content-not-found' );
 		}
 
-		// Cache miss or expired - try minimal WordPress bootstrap
-		self::$config = self::get_config_from_wp();
-		return self::$config;
+		// Step 2: Check if config directory exists
+		$config_dir = pmw_gtg_get_config_directory();
+		if ( ! $config_dir ) {
+			pmw_gtg_send_fallback_response( 'config-directory-not-found' );
+		}
+
+		// Step 3: Find config file using site map
+		$cache_file = pmw_gtg_find_config_file( $config_dir );
+		if ( ! $cache_file ) {
+			pmw_gtg_send_fallback_response( 'config-file-not-found' );
+		}
+
+		// Step 4: Check if config file exists and is not expired
+		if ( ! file_exists( $cache_file ) ) {
+			pmw_gtg_send_fallback_response( 'config-file-missing' );
+		}
+
+		// Step 5: Check config age (24 hours max)
+		if ( ( time() - filemtime( $cache_file ) ) >= self::CACHE_MAX_AGE ) {
+			pmw_gtg_send_fallback_response( 'config-expired' );
+		}
+
+		// Step 6: Read and validate config
+		$config_content = file_get_contents( $cache_file );
+		if ( false === $config_content ) {
+			pmw_gtg_send_fallback_response( 'config-unreadable' );
+		}
+
+		$config = json_decode( $config_content, true );
+		if ( ! is_array( $config ) ) {
+			pmw_gtg_send_fallback_response( 'config-invalid-json' );
+		}
+
+		// Step 7: Validate required fields
+		if ( ! isset( $config['enabled'], $config['measurement_path'] ) ) {
+			pmw_gtg_send_fallback_response( 'config-missing-fields' );
+		}
+
+		self::$config = $config;
+		return $config;
 	}
 
 	/**
-	 * Get the configuration file path
+	 * Get the configuration file path (deprecated, use pmw_gtg_find_config_file)
 	 *
-	 * The config file is stored next to this proxy file in the google folder.
-	 * This simplifies the setup and works reliably in symlinked development environments.
-	 *
-	 * @return string Path to the configuration file
+	 * @deprecated 1.56.0 Config is now in wp-content/uploads/pmw-gtg/
+	 * @return string|false Path to the configuration file or false.
 	 */
 	private static function get_config_file_path() {
-		return __DIR__ . '/pmw-gtg-config.json';
+		$config_dir = pmw_gtg_get_config_directory();
+		if ( ! $config_dir ) {
+			return false;
+		}
+		return pmw_gtg_find_config_file( $config_dir );
 	}
 
 	/**
@@ -513,8 +832,8 @@ final class PMW_GTG_Proxy_Standalone {
 			$context_str = ' | Context: ' . json_encode( $context, JSON_UNESCAPED_SLASHES );
 		}
 
-		// Format like WordPress proxy: [timestamp] pmw [level] [GTG-Proxy-Isolated] message | Context: {...}
-		$log_entry = "[{$timestamp}] pmw [{$level_str}] [GTG-Proxy-Isolated] {$message}{$context_str}" . PHP_EOL;
+		// Format like WordPress proxy: [timestamp] pmw [level] [GTG-Proxy-Standalone] message | Context: {...}
+		$log_entry = "[{$timestamp}] pmw [{$level_str}] [GTG-Proxy-Standalone] {$message}{$context_str}" . PHP_EOL;
 
 		// Try to find WordPress debug.log
 		// The log_directory in config points to wp-content/uploads/pmw-logs/
@@ -554,123 +873,6 @@ final class PMW_GTG_Proxy_Standalone {
 		} else {
 			error_log( rtrim( $log_entry ) );
 		}
-	}
-
-	/**
-	 * Get configuration from WordPress (minimal bootstrap)
-	 *
-	 * @return array Configuration array
-	 */
-	private static function get_config_from_wp() {
-		// Only define constants if not already defined
-		if ( ! defined( 'WP_USE_THEMES' ) ) {
-			define( 'WP_USE_THEMES', false );
-		}
-		if ( ! defined( 'SHORTINIT' ) ) {
-			define( 'SHORTINIT', true ); // Skip most of WordPress
-		}
-
-		// Try to find wp-load.php
-		$wp_load_path = self::find_wp_load();
-
-		if ( $wp_load_path && file_exists( $wp_load_path ) ) {
-			require_once $wp_load_path;
-
-			// Get PMW options directly from database
-			$options          = get_option( 'wgact_plugin_options', [] );
-			$measurement_path = isset( $options['google']['tag_gateway']['measurement_path'] )
-				? $options['google']['tag_gateway']['measurement_path']
-				: '';
-
-			// Get logging configuration
-			$logging_enabled = ! empty( $options['general']['logger']['is_active'] );
-			$log_level       = isset( $options['general']['logger']['log_level'] )
-				? $options['general']['logger']['log_level']
-				: 'error';
-
-			// Get upload directory for logging
-			$upload_dir    = wp_upload_dir();
-			$log_directory = isset( $upload_dir['basedir'] ) ? $upload_dir['basedir'] . '/pmw-logs' : '';
-
-			$config = [
-				'enabled'          => ! empty( $measurement_path ),
-				'measurement_path' => $measurement_path,
-				'site_url'         => get_site_url(),
-				'logging_enabled'  => $logging_enabled,
-				'log_level'        => $log_level,
-				'log_directory'    => $log_directory,
-				'updated'          => time(),
-			];
-
-			// Write cache for next request
-			self::write_config_cache( $config );
-
-			return $config;
-		}
-
-		return [
-			'enabled'          => false,
-			'logging_enabled'  => false,
-			'log_level'        => 'error',
-			'log_directory'    => '',
-		];
-	}
-
-	/**
-	 * Find the wp-load.php file
-	 *
-	 * @return string|false Path to wp-load.php or false if not found
-	 */
-	private static function find_wp_load() {
-		// Start from current directory and work up
-		$dir = __DIR__;
-
-		// Maximum depth to search (prevent infinite loops)
-		$max_depth = 10;
-		$depth     = 0;
-
-		while ( $depth < $max_depth ) {
-			$wp_load = $dir . '/wp-load.php';
-			if ( file_exists( $wp_load ) ) {
-				return $wp_load;
-			}
-
-			$parent = dirname( $dir );
-			if ( $parent === $dir ) {
-				break; // Reached filesystem root
-			}
-			$dir = $parent;
-			$depth++;
-		}
-
-		// Also check document root
-		if ( isset( $_SERVER['DOCUMENT_ROOT'] ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Document root is a server path, not user input
-			$wp_load = $_SERVER['DOCUMENT_ROOT'] . '/wp-load.php';
-			if ( file_exists( $wp_load ) ) {
-				return $wp_load;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Write configuration to cache file
-	 *
-	 * @param array $config Configuration array.
-	 * @return bool True on success, false on failure
-	 */
-	private static function write_config_cache( $config ) {
-		$cache_file = self::get_config_file_path();
-		$temp_file  = $cache_file . '.tmp.' . uniqid();
-
-		$result = file_put_contents( $temp_file, json_encode( $config, JSON_PRETTY_PRINT ), LOCK_EX );
-		if ( false !== $result ) {
-			return rename( $temp_file, $cache_file );
-		}
-
-		return false;
 	}
 
 	/**
@@ -1232,7 +1434,7 @@ final class PMW_GTG_Proxy_Standalone {
 		http_response_code( $status_code );
 
 		// Add handler identification header
-		header( 'X-PMW-GTG-Handler: isolated' );
+		header( 'X-PMW-GTG-Handler: standalone' );
 
 		// Forward safe headers (skip problematic ones)
 		$skip_headers = [ 'transfer-encoding', 'connection', 'content-encoding', 'content-length' ];
@@ -1296,7 +1498,7 @@ final class PMW_GTG_Proxy_Standalone {
 	private static function send_health_response() {
 		http_response_code( 200 );
 		header( 'Content-Type: text/plain; charset=utf-8' );
-		header( 'X-PMW-GTG-Handler: isolated' );
+		header( 'X-PMW-GTG-Handler: standalone' );
 		echo 'ok';
 		exit;
 	}

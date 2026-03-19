@@ -517,19 +517,22 @@ class Premium_Maps extends Widget_Base {
 			)
 		);
 
-		$this->add_control(
+		$this->add_responsive_control(
 			'premium_maps_map_zoom',
 			array(
-				'label'   => __( 'Zoom', 'premium-addons-for-elementor' ),
-				'type'    => Controls_Manager::SLIDER,
-				'default' => array(
+				'label'     => __( 'Zoom', 'premium-addons-for-elementor' ),
+				'type'      => Controls_Manager::SLIDER,
+				'default'   => array(
 					'size' => 12,
 				),
-				'range'   => array(
+				'range'     => array(
 					'px' => array(
 						'min' => 0,
 						'max' => 22,
 					),
+				),
+				'selectors' => array(
+					'{{WRAPPER}}' => '--pa-map-zoom: {{SIZE}}',
 				),
 			)
 		);
@@ -723,6 +726,8 @@ class Premium_Maps extends Widget_Base {
 				'content_classes' => 'editor-pa-doc',
 			)
 		);
+
+		Helper_Functions::register_element_feedback_controls( $this );
 
 		$this->end_controls_section();
 
@@ -1201,32 +1206,21 @@ class Premium_Maps extends Widget_Base {
 
 		if ( 'true' === $ip_location ) {
 
-			require_once PREMIUM_ADDONS_PATH . 'widgets/dep/urlopen.php';
+			$ip_address = Helper_Functions::get_user_ip_address();
 
-			if ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			$env = Helper_Functions::get_ip_location_data( $ip_address );
 
-				$http_x_headers = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
-
-				if ( is_array( $http_x_headers ) ) {
-					$http_x_headers = explode( ',', filter_var_array( $http_x_headers ) );
-				}
-
-				$_SERVER['REMOTE_ADDR'] = $http_x_headers[0];
+			if ( ! $env ) {
+				return;
 			}
 
-			$ip_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+			$centerlat = isset( $env['location']['latitude'] ) ? $env['location']['latitude'] : $centerlat;
 
-			$env = unserialize( rplg_urlopen( "http://www.geoplugin.net/php.gp?ip=$ip_address" )['data'] );
-
-			$centerlat = isset( $env['geoplugin_latitude'] ) ? $env['geoplugin_latitude'] : $centerlat;
-
-			$centerlong = isset( $env['geoplugin_longitude'] ) ? $env['geoplugin_longitude'] : $centerlong;
-
+			$centerlong = isset( $env['location']['longitude'] ) ? $env['location']['longitude'] : $centerlong;
 		}
 
 		$map_settings = array(
 			'mapId'             => $settings['premium_map_id'],
-			'zoom'              => $settings['premium_maps_map_zoom']['size'],
 			'maptype'           => $settings['premium_maps_map_type'],
 			'streetViewControl' => $street_view,
 			'centerlat'         => $centerlat,

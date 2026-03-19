@@ -46,7 +46,10 @@ class Activator {
 		),
 		'3.3.7' => array(
 			'update_db_337',
-		)
+		),
+		'3.4.0' => array(
+			'update_db_340',
+		),
 	);
 	/**
 	 * Return the current instance of the class
@@ -223,6 +226,40 @@ class Activator {
 			if ( class_exists( $controller_class ) ) {
 				$controller = $controller_class::get_instance();
 				$controller->install_tables();
+			}
+		}
+	}
+
+	public static function update_db_340() {
+		// Only run this migration for users who have migrated from legacy UI
+		$migration_options = get_option( 'cky_migration_options', array() );
+		$migration_status  = isset( $migration_options['status'] ) ? $migration_options['status'] : false;
+
+		if ( ! $migration_status ) {
+			return;
+		}
+
+		$items = Controller::get_instance()->get_items();
+		foreach ( $items as $item ) {
+			$banner   = new Banner( $item->banner_id );
+			$settings = $banner->get_settings();
+			$law      = $banner->get_law();
+
+			// For CCPA banners, explicitly disable the accept button
+			if ( 'ccpa' === $law ) {
+				if ( isset( $settings['config']['notice']['elements']['buttons']['elements']['accept'] ) ) {
+					$settings['config']['notice']['elements']['buttons']['elements']['accept']['status'] = false;
+					$banner->set_settings( $settings );
+					$banner->save();
+				}
+			} else {
+				// For non-CCPA banners, enable the accept button if it's disabled
+				if ( isset( $settings['config']['notice']['elements']['buttons']['elements']['accept']['status'] )
+					&& false === $settings['config']['notice']['elements']['buttons']['elements']['accept']['status'] ) {
+					$settings['config']['notice']['elements']['buttons']['elements']['accept']['status'] = true;
+					$banner->set_settings( $settings );
+					$banner->save();
+				}
 			}
 		}
 	}

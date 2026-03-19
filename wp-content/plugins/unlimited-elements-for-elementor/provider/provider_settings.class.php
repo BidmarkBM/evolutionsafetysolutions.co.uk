@@ -79,9 +79,8 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
 		$params["origtype"] = UniteCreatorDialogParam::PARAM_RAW_HTML;
 		$params["html"] = "<div class='uc-edit-template-button'><a href='javascript:void(0)' class='uc-edit-template-button__link unite-setting-special-select' data-settingtype='template_button' style='display:none' data-selectid='{$name}_templateid' target='_blank'>Edit Template</a></div>";
 
-
-
-		$this->addTextBox($name."_templateid_button", "", $title , $params);
+        if(GlobalsProviderUC::$renderPlatform != GlobalsProviderUC::RENDER_PLATFORM_GUTENBERG)
+		    $this->addTextBox($name."_templateid_button", "", $title , $params);
 
 	}
 
@@ -3629,7 +3628,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     'responsive_type' => 'desktop',
                     'responsive_id'   => 'advanced_margin',
                     'units'           => ['px','vh','%','em','rem'],
-                    'selector'        => '.ue-widget-root',
+                    'selector'        => '',
                     'selector_value'  => 'margin-top:{{top}}!important;margin-right:{{right}}!important;margin-bottom:{{bottom}}!important;margin-left:{{left}}!important;',
                 ]
             );
@@ -3652,7 +3651,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     'responsive_type' => 'desktop',
                     'responsive_id'   => 'advanced_padding',
                     'units'           => ['px','vh','%','em','rem'],
-                    'selector'        => '.ue-widget-root',
+                    'selector'        => '',
                     'selector_value' => 'padding-top:{{top}}!important;padding-right:{{right}}!important;padding-bottom:{{bottom}}!important;padding-left:{{left}}!important;',
                 ]
             );
@@ -3697,7 +3696,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     'unit'           => '',
                     'show_slider'     => false,
 
-                    'selector'       => '.ue-widget-root',
+                    'selector'       => '',
                     'selector_value' => 'z-index:{{value}};',
 
                 ]
@@ -3722,7 +3721,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     [
                         'tab'               => self::TAB_ADVANCED,
                         'items'             => [0, 1],
-                        'selector'          => '.ue-widget-root',
+                        'selector'          => '',
                     ]
                 );
             }        
@@ -3746,7 +3745,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                 'none',
                 [
                     'tab' => self::TAB_ADVANCED,
-                    'selector' => '.ue-widget-root',
+                    'selector' => '',
                     'selector_value' => 'data-bg-type:{{value}};',
                 ]
             );
@@ -3760,7 +3759,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                 [
                     'tab'                 => self::TAB_ADVANCED,
                     'elementor_condition' => ['advanced_background_type' => 'solid'],
-                    'selector'            => '.ue-widget-root',
+                    'selector'            => '',
                     'selector_value'      => 'background-color:{{value}};',
                 ]
             );
@@ -3774,7 +3773,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                 [
                     'tab'                 => self::TAB_ADVANCED,
                     'elementor_condition' => ['advanced_background_type' => 'solid'],
-                    'selector'            => '.ue-widget-root',
+                    'selector'            => '',
                     'selector_value'      => 'background-image:url({{value}}); background-size:cover; background-repeat:no-repeat;',
                 ]
             );
@@ -3788,7 +3787,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                 [
                     'tab'                 => self::TAB_ADVANCED,
                     'elementor_condition' => ['advanced_background_type' => 'gradient'],
-                    'selector'            => '.ue-widget-root',
+                    'selector'            => '',
                     'selector_value'      => 'background-image:linear-gradient({{advanced_background_gradient_angle}}deg, {{value}}, {{advanced_background_gradient_color2}});',
                 ]
             );
@@ -3802,7 +3801,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                 [
                     'tab'                 => self::TAB_ADVANCED,
                     'elementor_condition' => ['advanced_background_type' => 'gradient'],
-                    'selector'            => '.ue-widget-root',
+                    'selector'            => '',
                     'selector_value'      => 'background-image:linear-gradient({{advanced_background_gradient_angle}}deg, {{advanced_background_gradient_color1}}, {{value}});',
                 ]
             );
@@ -3822,7 +3821,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     'step'                => 1,
                     'units'               => '',
                     'show_slider'         => true,
-                    'selector'            => '.ue-widget-root',
+                    'selector'            => '',
                     'selector_value'      => 'background-image:linear-gradient({{value}}deg, {{advanced_background_gradient_color1}}, {{advanced_background_gradient_color2}});',
                 ]
             );
@@ -3851,7 +3850,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                 [
                     'tab'       => self::TAB_ADVANCED,
 
-                        'selector'       => '.ue-widget-root',
+                        'selector'       => '',
                         'selector_value' => 'border-style:{{value}};',
 
                 ]
@@ -3875,7 +3874,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     'units'               => ['px','%','em','rem'],
                     'elementor_condition' => $borderTypeCondition,
 
-                        'selector'       => '.ue-widget-root',
+                        'selector'       => '',
                         'selector_value' =>
                             'border-top-width:{{top}};' .
                             'border-right-width:{{right}};' .
@@ -3901,7 +3900,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     'units'               => ['px','%','em','rem'],
                     'elementor_condition' => $borderTypeCondition,
 
-                        'selector'       => '.ue-widget-root',
+                        'selector'       => '',
                         'selector_value' =>
                             'border-top-width:{{top}}{{unit}};' .
                             'border-right-width:{{right}}{{unit}};' .
@@ -3927,7 +3926,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     'units'               => ['px','%','em','rem'],
                     'elementor_condition' => $borderTypeCondition,
 
-                        'selector'       => '.ue-widget-root',
+                        'selector'       => '',
                         'selector_value' =>
                             'border-top-width:{{top}}{{unit}};' .
                             'border-right-width:{{right}}{{unit}};' .
@@ -3947,7 +3946,7 @@ class UniteCreatorSettings extends UniteCreatorSettingsWork{
                     'tab'                 => self::TAB_ADVANCED,
                     'elementor_condition' => $borderTypeCondition,
 
-                        'selector'       => '.ue-widget-root',
+                        'selector'       => '',
                         'selector_value' => 'border-color:{{value}};',
 
                 ]

@@ -136,6 +136,7 @@ class Pixel_Manager {
             'SweetCode\\Pixel_Manager\\Pixels\\Descriptors\\Taboola_Descriptor',
             // Statistics pixels
             'SweetCode\\Pixel_Manager\\Pixels\\Descriptors\\Hotjar_Descriptor',
+            'SweetCode\\Pixel_Manager\\Pixels\\Descriptors\\Crazyegg_Descriptor',
             // Optimization pixels
             'SweetCode\\Pixel_Manager\\Pixels\\Descriptors\\VWO_Descriptor',
             'SweetCode\\Pixel_Manager\\Pixels\\Descriptors\\Optimizely_Descriptor',
@@ -261,8 +262,8 @@ class Pixel_Manager {
 		<script<?php 
         echo wp_kses( Helpers::get_opening_script_string(), Helpers::get_script_string_allowed_html() );
         ?>>
-			(window.wpmDataLayer = window.wpmDataLayer || {}).products = window.wpmDataLayer.products || {};
-			window.wpmDataLayer.products                               = Object.assign(window.wpmDataLayer.products, <?php 
+			(window.pmwDataLayer = window.pmwDataLayer || {}).products = window.pmwDataLayer.products || {};
+			window.pmwDataLayer.products                               = Object.assign(window.pmwDataLayer.products, <?php 
         echo wp_json_encode( (object) $products );
         ?>);
 		</script>
@@ -462,6 +463,10 @@ class Pixel_Manager {
         }
         $order_total = $order->get_total();
         $adjusted_value = $order_total - $refunded_amount;
+        // Avoid division by zero for free orders (e.g., fully discounted orders)
+        if ( 0 === (int) $order_total ) {
+            return Helpers::format_decimal( 0, 2 );
+        }
         // Calculate the new order value considering the order total logic that has been applied by the user
         $adjusted_value_percentage = $adjusted_value / $order_total;
         $adjusted_value = Shop::get_order_value_total_marketing( $order, true ) * $adjusted_value_percentage;
@@ -488,7 +493,7 @@ class Pixel_Manager {
         if ( !$this->is_order_eligible_for_acr( $order ) ) {
             wp_send_json_error( 'Order is not eligible for ACR' );
         }
-        // Return the order details for the wpmDataLayer with the provided ID
+        // Return the order details for the pmwDataLayer with the provided ID
         wp_send_json_success( $this->get_order_data( $order ) );
     }
 
@@ -517,15 +522,16 @@ class Pixel_Manager {
         return true;
     }
 
-    public static function pmw_store_ipv6_in_server_session() {
+    public static function pmw_store_client_ip_in_server_session() {
         $_post = Helpers::get_input_vars( INPUT_POST );
-        // return error if the ipv6 field is not set
-        if ( !isset( $_post['data']['ipv6'] ) ) {
-            wp_send_json_error( 'No IPv6 address provided' );
+        // return error if the ip field is not set
+        if ( !isset( $_post['data']['ip'] ) ) {
+            wp_send_json_error( 'No IP address provided' );
         }
-        // return error if the ipv6 field is not a valid IPv6 address
-        if ( !Helpers::is_valid_ipv6_address( $_post['data']['ipv6'] ) ) {
-            wp_send_json_error( 'Invalid IPv6 address' );
+        $ip = sanitize_text_field( $_post['data']['ip'] );
+        // return error if the ip field is not a valid IP address (IPv4 or IPv6)
+        if ( !filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+            wp_send_json_error( 'Invalid IP address' );
         }
         // If WooCommerce is not active, return error
         if ( !Environment::is_woocommerce_active() ) {
@@ -539,11 +545,11 @@ class Pixel_Manager {
         if ( !WC()->session ) {
             wp_send_json_error( 'WooCommerce session not available' );
         }
-        // Set the IPv6 address in the WooCommerce session
-        WC()->session->set( 'client_ipv6', $_post['data']['ipv6'] );
+        // Set the client IP address in the WooCommerce session
+        WC()->session->set( 'client_ip', $ip );
         wp_send_json_success( [
-            'ipv6'    => $_post['data']['ipv6'],
-            'message' => 'IPv6 address stored in server session',
+            'ip'      => $ip,
+            'message' => 'Client IP address stored in server session',
         ] );
     }
 
@@ -629,7 +635,7 @@ class Pixel_Manager {
 
     // Thanks to: https://gist.github.com/mishterk/6b7a4d6e5a91086a5a9b05ace304b5ce#file-mark-wordpress-scripts-as-async-or-defer-php
     public function experimental_defer_scripts( $tag, $handle ) {
-        if ( 'wpm' !== $handle ) {
+        if ( 'pmw' !== $handle ) {
             return $tag;
         }
         return str_replace( ' src', ' defer src', $tag );
@@ -643,6 +649,30 @@ class Pixel_Manager {
     }
 
     public function woocommerce_after_cart_item_name( $cart_item, $cart_item_key ) {
+        /**
+         * Filter to control output of cart item data inline script.
+         *
+         * Some themes with JavaScript renderers don't properly hide script tags,
+         * causing them to be visible. Use this filter to suppress the output.
+         *
+         * @since 1.54.2
+         *
+         * @param bool   $output         Whether to output the script. Default true.
+         * @param array  $cart_item      Cart item data with product_id and variation_id.
+         * @param string $cart_item_key  Unique cart item key.
+         * @param string $action         Current action: 'woocommerce_after_cart_item_name',
+         *                               'woocommerce_after_mini_cart_item_name', or
+         *                               'woocommerce_mini_cart_contents'.
+         */
+        if ( !apply_filters(
+            'pmw_output_cart_item_data',
+            true,
+            $cart_item,
+            $cart_item_key,
+            current_action()
+        ) ) {
+            return;
+        }
         $data = [
             'product_id'   => $cart_item['product_id'],
             'variation_id' => $cart_item['variation_id'],
@@ -652,8 +682,8 @@ class Pixel_Manager {
         //		$json_encode_options = $json_encode_options | JSON_PRETTY_PRINT;
         ?>
 		<script>
-			window.wpmDataLayer.cart_item_keys                                          = window.wpmDataLayer.cart_item_keys || {};
-			window.wpmDataLayer.cart_item_keys['<?php 
+			window.pmwDataLayer.cart_item_keys                                          = window.pmwDataLayer.cart_item_keys || {};
+			window.pmwDataLayer.cart_item_keys['<?php 
         echo esc_js( $cart_item_key );
         ?>'] = <?php 
         echo wp_json_encode( $data, $json_encode_options );
@@ -791,8 +821,8 @@ class Pixel_Manager {
         echo wp_kses( Helpers::get_opening_script_string(), Helpers::get_script_string_allowed_html() );
         ?>>
 
-			window.wpmDataLayer = window.wpmDataLayer || {};
-			window.wpmDataLayer = Object.assign(window.wpmDataLayer, <?php 
+			window.pmwDataLayer = window.pmwDataLayer || {};
+			window.pmwDataLayer = Object.assign(window.pmwDataLayer, <?php 
         echo wp_json_encode( $this->get_data_for_data_layer(), $json_encode_options );
         ?>);
 
@@ -802,7 +832,7 @@ class Pixel_Manager {
     }
 
     /**
-     * Set up the wpmDataLayer
+     * Set up the pmwDataLayer
      *
      * @return mixed|void
      */
@@ -856,6 +886,9 @@ class Pixel_Manager {
         if ( Options::is_hotjar_enabled() ) {
             $data['hotjar'] = $this->get_hotjar_pixel_data();
         }
+        if ( Options::is_crazyegg_enabled() ) {
+            $data['crazyegg'] = $this->get_crazyegg_pixel_data();
+        }
         return $data;
     }
 
@@ -894,15 +927,16 @@ class Pixel_Manager {
         $data['tag_id'] = Google_Helpers::get_google_tag_id_information()['active'];
         $data['tag_id_suppressed'] = Google_Helpers::get_google_tag_id_information()['suppressed'];
         $data['tag_gateway']['measurement_path'] = Options::get_google_tag_gateway_measurement_path();
-        // Always include proxy_url for automatic fallback detection
-        // JavaScript will detect if WordPress fallback is being used and switch to direct proxy URL
-        $isolated_url = GTG_Proxy::get_isolated_proxy_url();
-        if ( $isolated_url ) {
-            $data['tag_gateway']['proxy_url'] = $isolated_url;
-        }
-        // Include server-detected GTG handler for frontend to use without extra requests
+        // Always include proxy_url for JavaScript detection to use as fallback
+        // Server-side detection cannot reliably detect Cloudflare because server-to-server
+        // requests bypass CDN/proxy layers. Let JavaScript detect the handler instead,
+        // since only the browser can correctly detect whether Cloudflare is intercepting.
         if ( Options::get_google_tag_gateway_measurement_path() ) {
-            $data['tag_gateway']['handler'] = GTG_Config::get_handler();
+            $isolated_url = GTG_Proxy::get_isolated_proxy_url();
+            if ( $isolated_url ) {
+                $data['tag_gateway']['proxy_url'] = $isolated_url;
+            }
+            // Don't set handler - let JavaScript detect it via browser request
         }
         $data['tcf_support'] = Options::is_google_tcf_support_active();
         $data['consent_mode'] = [
@@ -986,6 +1020,18 @@ class Pixel_Manager {
     private function get_hotjar_pixel_data() {
         return [
             'site_id' => Options::get_hotjar_site_id(),
+        ];
+    }
+
+    private function get_crazyegg_pixel_data() {
+        return [
+            'account_number' => Options::get_crazyegg_account_number(),
+        ];
+    }
+
+    private static function get_contentsquare_pixel_data() {
+        return [
+            'tag_id' => Options::get_contentsquare_tag_id(),
         ];
     }
 
@@ -1387,16 +1433,16 @@ class Pixel_Manager {
     public function front_end_scripts() {
         $pmw_dependencies = ['jquery', 'wp-hooks'];
         wp_enqueue_script(
-            'wpm',
-            PMW_PLUGIN_DIR_PATH . 'js/public/free/wpm-public.p1.min.js',
+            'pmw',
+            PMW_PLUGIN_DIR_PATH . 'js/public/free/pmw-public.p1.min.js',
             $pmw_dependencies,
             PMW_CURRENT_VERSION,
             $this->move_pmw_script_to_footer()
         );
         wp_localize_script( 
-            'wpm',
+            'pmw',
             //            'ajax_object',
-            'wpm',
+            'pmw',
             [
                 'ajax_url'      => admin_url( 'admin-ajax.php' ),
                 'root'          => esc_url_raw( rest_url() ),
@@ -1574,7 +1620,7 @@ class Pixel_Manager {
      * 1. Add a default option in Options::get_default_options() under general->modules
      * 2. Add a helper method in Options class (e.g., should_load_module_name())
      * 3. Add the flag here in get_modules_config()
-     * 4. Add conditional loading in main.js based on wpmDataLayer.general.modules.module_name
+     * 4. Add conditional loading in main.js based on pmwDataLayer.general.modules.module_name
      * 5. Add admin UI toggle in Admin::add_section_advanced_subsection_general()
      *
      * @return array Associative array of module names and their enabled/disabled status.

@@ -156,6 +156,9 @@ class Options {
 			'hotjar'     => [
 				'site_id' => '',
 			],
+			'crazyegg'   => [
+				'account_number' => '',
+			],
 			'pinterest'  => [
 				'pixel_id'          => '',
 				'ad_account_id'     => '',
@@ -203,12 +206,9 @@ class Options {
 				'linkedin'   => [
 					'partner_id'     => '',
 					'conversion_ids' => [
-						'search'         => '',
-						'view_content'   => '',
-						'add_to_list'    => '',
-						'add_to_cart'    => '',
-						'start_checkout' => '',
-						'purchase'       => '',
+						'view_content' => '',
+						'add_to_cart'  => '',
+						'purchase'     => '',
 					],
 				],
 				'optimizely' => [
@@ -230,6 +230,9 @@ class Options {
 				],
 				'vwo'        => [
 					'account_id' => '',
+				],
+				'contentsquare' => [
+					'tag_id' => '',
 				],
 			],
 			'shop'       => [
@@ -444,6 +447,18 @@ class Options {
 
 	public static function is_hotjar_enabled() {
 		return (bool) self::get_hotjar_site_id();
+	}
+
+	/**
+	 * CrazyEgg
+	 */
+
+	public static function get_crazyegg_account_number() {
+		return self::get_options_obj()->crazyegg->account_number;
+	}
+
+	public static function is_crazyegg_enabled() {
+		return (bool) self::get_crazyegg_account_number();
 	}
 
 	/**
@@ -812,6 +827,18 @@ class Options {
 
 	public static function is_ab_tasty_active() {
 		return (bool) self::get_ab_tasty_account_id();
+	}
+
+	/**
+	 * Contentsquare
+	 */
+
+	public static function get_contentsquare_tag_id() {
+		return self::get_options_obj()->pixels->contentsquare->tag_id;
+	}
+
+	public static function is_contentsquare_active() {
+		return (bool) self::get_contentsquare_tag_id();
 	}
 
 	/**
